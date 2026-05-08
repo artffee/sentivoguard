@@ -45,6 +45,20 @@ SG.backend = (function () {
     return j;
   }
 
+  function runScan(kind, target) {
+    if (!state.available) return Promise.resolve({ ok: false, error: "no_backend" });
+    return call("/api/scan/" + kind, {
+      method:  "POST",
+      headers: { "content-type": "application/json" },
+      body:    JSON.stringify({ target })
+    });
+  }
+
+  function getJson(path) {
+    if (!state.available) return Promise.resolve({ ok: false, error: "no_backend" });
+    return call(path, { method: "GET" });
+  }
+
   // Public API — every method falls back gracefully if backend is offline.
   return {
     get state() { return state; },
@@ -89,6 +103,19 @@ SG.backend = (function () {
         body:    JSON.stringify({ target })
       });
     },
+
+    async scanPip(target)       { return runScan("pip",       target); },
+    async scanGem(target)       { return runScan("gem",       target); },
+    async scanGithub(target)    { return runScan("github",    target); },
+    async scanDocker(target)    { return runScan("docker",    target); },
+    async scanExtension(target) { return runScan("extension", target); },
+
+    // OS tool status (read-only)
+    async toolDefend()  { return getJson("/api/tool/defend"); },
+    async toolDns()     { return getJson("/api/tool/dns");     },
+    async toolDrivers() { return getJson("/api/tool/drivers"); },
+    async toolWall()    { return getJson("/api/tool/wall");    },
+    async toolBlock()   { return getJson("/api/tool/block");   },
 
     async getDiskPreset() {
       if (!state.available) return { ok: false, error: "no_backend" };

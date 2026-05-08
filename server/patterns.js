@@ -137,6 +137,52 @@ const SHELL_PATTERNS = {
   ]
 };
 
+// Python-specific patterns layered on top of the base set for pip scans.
+const PYTHON_PATTERNS = {
+  py_exec: [
+    p(/\bexec\s*\(/g,                              HIGH,   "exec() — runs arbitrary string as Python code"),
+    p(/\b__import__\s*\(/g,                        MEDIUM, "Dynamic __import__() (often used to hide imports)"),
+    p(/\bcompile\s*\([^)]*[\"']<string>[\"']/g,    MEDIUM, "compile() of a string source"),
+    p(/\bos\.system\s*\(/g,                        HIGH,   "os.system() — shell execution"),
+    p(/\bsubprocess\.(?:Popen|run|call|check_output|check_call)\s*\([^)]*shell\s*=\s*True/g,
+                                                   HIGH,   "subprocess with shell=True (injection risk)"),
+    p(/\bpickle\.loads?\s*\(/g,                    HIGH,   "pickle.loads() — arbitrary code on deserialize"),
+    p(/\bmarshal\.loads?\s*\(/g,                   HIGH,   "marshal.loads() — arbitrary code on deserialize"),
+    p(/\byaml\.(?:load|unsafe_load)\s*\([^)]*(?!Loader\s*=\s*\w*Safe)/g,
+                                                   MEDIUM, "yaml.load without SafeLoader")
+  ],
+  py_setup_exec: [
+    p(/from\s+setuptools[^\n]*\nimport\s+(?:os|subprocess|urllib|requests)/g, HIGH,
+      "setup.py imports network/exec libs (runs at install)"),
+    p(/setup\([^)]*cmdclass\s*=/g,                 HIGH,
+      "Custom setup.py cmdclass — runs at install time")
+  ]
+};
+
+// Ruby-specific patterns for gem scans.
+const RUBY_PATTERNS = {
+  rb_exec: [
+    p(/\bMarshal\.load\s*\(/g,                   HIGH,   "Marshal.load — arbitrary code on deserialize"),
+    p(/\bYAML\.load\s*\(/g,                      MEDIUM, "YAML.load (use safe_load instead)"),
+    p(/`[^`]+`/g,                                MEDIUM, "Backtick command execution"),
+    p(/\bsystem\s*\(/g,                          MEDIUM, "system() shell execution"),
+    p(/\b(?:exec|fork)\s*\(/g,                   HIGH,   "exec()/fork() — process spawn"),
+    p(/Open3\.(?:popen|capture|pipeline)/g,      MEDIUM, "Open3 process pipelines"),
+    p(/Net::HTTP|RestClient|HTTParty|Faraday/g,  LOW,    "Outbound HTTP client"),
+    p(/ENV\.to_h|ENV\[\s*[\"'][\w_]+[\"']\s*\]/g,LOW,    "Reads environment variables")
+  ]
+};
+
+// Dropper / phishing patterns inside browser extension JS.
+const EXTENSION_PATTERNS = {
+  ext_keylogger: [
+    p(/addEventListener\s*\(\s*[\"'](?:keydown|keypress|keyup|input)/g, MEDIUM,
+      "Listens to keystrokes (potential keylogger)"),
+    p(/document\.cookie/g,                       MEDIUM, "Reads document.cookie"),
+    p(/localStorage\.(?:getItem|setItem)/g,      LOW,    "Accesses localStorage")
+  ]
+};
+
 // File extensions each scanner cares about.
 const EXTS = {
   npm:    [".js", ".mjs", ".cjs", ".ts", ".tsx", ".json"],
@@ -194,4 +240,7 @@ function locationRisk(filePath) {
   return null;
 }
 
-module.exports = { PATTERNS, SHELL_PATTERNS, EXTS, SUSPICIOUS_NAMES, locationRisk };
+module.exports = {
+  PATTERNS, SHELL_PATTERNS, PYTHON_PATTERNS, RUBY_PATTERNS, EXTENSION_PATTERNS,
+  EXTS, SUSPICIOUS_NAMES, locationRisk
+};

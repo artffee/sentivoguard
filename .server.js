@@ -17,13 +17,19 @@ const url  = require("url");
 
 const { getConnections } = require("./server/tool-netstat");
 const { scan: cleanScan, clean: cleanRun } = require("./server/tool-clean");
-const { scanFolder } = require("./server/scanner-folder");
-const { scanNpm }    = require("./server/scanner-npm");
+const { scanFolder }    = require("./server/scanner-folder");
+const { scanNpm }       = require("./server/scanner-npm");
+const { scanPip }       = require("./server/scanner-pip");
+const { scanGem }       = require("./server/scanner-gem");
+const { scanGithub }    = require("./server/scanner-github");
+const { scanDocker }    = require("./server/scanner-docker");
+const { scanExtension } = require("./server/scanner-extension");
 const { scanDisk, quickScanPaths } = require("./server/scanner-disk");
-const Q  = require("./server/quarantine");
-const VT = require("./server/tool-virustotal");
-const W  = require("./server/tool-watcher");
-const L  = require("./server/license");
+const Q   = require("./server/quarantine");
+const VT  = require("./server/tool-virustotal");
+const W   = require("./server/tool-watcher");
+const L   = require("./server/license");
+const OS_ = require("./server/tool-os");
 
 // Start the real-time watcher daemon as soon as the server boots.
 W.start();
@@ -131,6 +137,48 @@ async function api(req, res, pathname) {
       const r = await scanNpm(body.target);
       return json(res, 200, r);
     }
+
+    if (pathname === "/api/scan/pip" && req.method === "POST") {
+      const body = await readJson(req);
+      if (!body.target) return json(res, 400, { ok: false, error: "missing_target" });
+      return json(res, 200, await scanPip(body.target));
+    }
+
+    if (pathname === "/api/scan/gem" && req.method === "POST") {
+      const body = await readJson(req);
+      if (!body.target) return json(res, 400, { ok: false, error: "missing_target" });
+      return json(res, 200, await scanGem(body.target));
+    }
+
+    if (pathname === "/api/scan/github" && req.method === "POST") {
+      const body = await readJson(req);
+      if (!body.target) return json(res, 400, { ok: false, error: "missing_target" });
+      return json(res, 200, await scanGithub(body.target));
+    }
+
+    if (pathname === "/api/scan/docker" && req.method === "POST") {
+      const body = await readJson(req);
+      if (!body.target) return json(res, 400, { ok: false, error: "missing_target" });
+      return json(res, 200, await scanDocker(body.target));
+    }
+
+    if (pathname === "/api/scan/extension" && req.method === "POST") {
+      const body = await readJson(req);
+      if (!body.target) return json(res, 400, { ok: false, error: "missing_target" });
+      return json(res, 200, await scanExtension(body.target));
+    }
+
+    // ── OS tools (read-only status) ─────────────────────────────
+    if (pathname === "/api/tool/defend"  && req.method === "GET")
+      return json(res, 200, await OS_.defendStatus());
+    if (pathname === "/api/tool/dns"     && req.method === "GET")
+      return json(res, 200, await OS_.dnsStatus());
+    if (pathname === "/api/tool/drivers" && req.method === "GET")
+      return json(res, 200, await OS_.driversList());
+    if (pathname === "/api/tool/wall"    && req.method === "GET")
+      return json(res, 200, await OS_.firewallStatus());
+    if (pathname === "/api/tool/block"   && req.method === "GET")
+      return json(res, 200, OS_.hostsStatus());
 
     if (pathname === "/api/scan/disk/preset" && req.method === "GET") {
       return json(res, 200, { ok: true, paths: quickScanPaths() });

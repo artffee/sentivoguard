@@ -67,8 +67,24 @@ SG.router.register("instinct", function (view) {
   view.append(summary, scannerGrid, terminalWrap, findingsWrap);
 
   // ── helpers ───────────────────────────────────────────────────────
+  // All 7 scanners are now real-backed when the backend is online.
+  const REAL_IDS = new Set(["npm", "folder", "pip", "gem", "github", "docker", "ext"]);
+
+  function dispatchScan(id, target) {
+    switch (id) {
+      case "npm":    return SG.backend.scanNpm(target);
+      case "folder": return SG.backend.scanFolder(target);
+      case "pip":    return SG.backend.scanPip(target);
+      case "gem":    return SG.backend.scanGem(target);
+      case "github": return SG.backend.scanGithub(target);
+      case "docker": return SG.backend.scanDocker(target);
+      case "ext":    return SG.backend.scanExtension(target);
+      default:       return Promise.resolve({ ok: false, error: "unknown_scanner" });
+    }
+  }
+
   function scannerCard(s) {
-    const isReal = SG.backend.isReal() && (s.id === "npm" || s.id === "folder");
+    const isReal = SG.backend.isReal() && REAL_IDS.has(s.id);
     return el("div", { class: "scanner-card" },
       el("div", { class: "scanner-head" },
         el("div", {},
@@ -97,7 +113,7 @@ SG.router.register("instinct", function (view) {
     const target = document.getElementById("input-" + s.id).value || SG.scanDefaults[s.id];
     document.getElementById("scan-target").textContent = "$ instinct " + s.id + " " + target;
 
-    if (SG.backend.isReal() && (s.id === "npm" || s.id === "folder")) {
+    if (SG.backend.isReal() && REAL_IDS.has(s.id)) {
       runReal(s, target);
     } else {
       streamScript(s.id, null, target);
@@ -112,7 +128,7 @@ SG.router.register("instinct", function (view) {
       if (i >= ids.length) return;
       const s = SG.scanners[i];
       const target = document.getElementById("input-" + s.id).value || SG.scanDefaults[s.id];
-      if (SG.backend.isReal() && (s.id === "npm" || s.id === "folder")) {
+      if (SG.backend.isReal() && REAL_IDS.has(s.id)) {
         runReal(s, target, () => { i++; setTimeout(next, 350); });
       } else {
         streamScript(s.id, () => { i++; setTimeout(next, 350); }, target);
@@ -131,9 +147,7 @@ SG.router.register("instinct", function (view) {
     addLine(term, "dim", "─".repeat(54));
     addLine(term, "info", "[i] " + scanner.name + " · live backend scan...");
 
-    const result = scanner.id === "npm"
-      ? await SG.backend.scanNpm(target)
-      : await SG.backend.scanFolder(target);
+    const result = await dispatchScan(scanner.id, target);
 
     if (!result.ok) {
       addLine(term, "danger", "[X] Backend error: " + (result.error || "unknown") +
