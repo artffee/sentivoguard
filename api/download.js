@@ -1,27 +1,20 @@
 // GET /api/download
-// Validates the sg_license cookie. On success, 302-redirects to the private
-// .exe URL stored in SG_DOWNLOAD_URL (server-side env var only).
-// On failure, redirects to /members?error=... so the user can re-enter their key.
+// Auth path 1: sg_license cookie carries a license JWT directly.
+// Auth path 2: sg_session cookie carries a user with an attached license JWT.
+// Either succeeds → 302 to SG_DOWNLOAD_URL (private random Vercel path).
+// Neither → 302 to /members?error=login_required.
 //
-// Storage architecture:
-//   The .exe lives at /_dl/<128-bit-random>/SentivoGuard-Setup-2.1.0.exe in the
-//   Vercel deployment. The path is unguessable (128 bits of entropy) and is
-//   never written into HTML, JS, or CSS. The only place it appears is in the
-//   Location header of THIS function's 302 response, after the JWT cookie is
-//   verified. To rotate the URL, regenerate the hash, redeploy, and update
-//   SG_DOWNLOAD_URL — old paths stop being referenced.
-//
-// HARDER-private upgrade paths (when ready):
-//   1. Vercel Blob with `getDownloadUrl()` — true short-lived signed URLs
-//      that expire in minutes. Each customer gets a fresh URL per download.
-//   2. R2 / S3 with presigned URLs — same idea, different vendor.
-//   3. Stream-through-function — fetch upstream + pipe through this function.
-//      Customer never sees any upstream URL. Watch out for function timeout
-//      (10s on Vercel Hobby) when the file is large or the network slow.
+// Hardening notes (see comments in api/auth/me.js for the upgrade path to a
+// truly per-customer signed URL via Vercel Blob / R2 / S3):
+//   - Cache-Control: private, no-store, no-cache  (no intermediary caching)
+//   - Pragma: no-cache (legacy proxies)
+//   - Referrer-Policy: no-referrer  (URL doesn't leak via Referer)
+//   - X-Robots-Tag (set on the storage path itself in vercel.json) prevents
+//     accidental indexing.
 
-const { verify } = require("../server/license");
-
-const COOKIE = "sg_license";
+const { verify }      = require("../server/license");
+const { readSession } = require("../lib/users");
+const { readCookie }  = require("../lib/cookies");
 
 module.exports = async function handler(req, res) {
   const downloadUrl = process.env.SG_DOWNLOAD_URL;
@@ -29,15 +22,13 @@ module.exports = async function handler(req, res) {
     return text(res, 500, "Download not configured. Set SG_DOWNLOAD_URL on the server.");
   }
 
-  const token = readCookie(req, COOKIE);
-  if (!token) return redirect(res, "/members?error=login_required");
+  const licenseToken = resolveLicense(req);
+  if (!licenseToken) return redirect(res, "/members?error=login_required");
 
-  const r = verify(token);
-  if (!r.ok) return redirect(res, "/members?error=" + encodeURIComponent(r.error));
-  if (!r.payload.plan) return redirect(res, "/members?error=no_plan");
+  const r = verify(licenseToken);
+  if (!r.ok)            return redirect(res, "/members?error=" + encodeURIComponent(r.error));
+  if (!r.payload.plan)  return redirect(res, "/members?error=no_plan");
 
-  // Defense-in-depth: tell intermediaries not to cache or share this redirect,
-  // and ensure the unguessable URL doesn't leak through Referer.
   res.setHeader("Cache-Control",   "private, no-store, no-cache, must-revalidate");
   res.setHeader("Pragma",          "no-cache");
   res.setHeader("Referrer-Policy", "no-referrer");
@@ -46,13 +37,16 @@ module.exports = async function handler(req, res) {
   res.end();
 };
 
-function readCookie(req, name) {
-  const raw = req.headers.cookie || "";
-  for (const part of raw.split(";")) {
-    const [k, v] = part.trim().split("=");
-    if (k === name) return decodeURIComponent(v || "");
-  }
-  return null;
+// Look at sg_license first, then fall back to sg_session.user.license.
+function resolveLicense(req) {
+  const direct = readCookie(req, "sg_license");
+  if (direct) return direct;
+
+  const sessionToken = readCookie(req, "sg_session");
+  if (!sessionToken) return null;
+
+  const user = readSession(sessionToken);
+  return user && user.license ? user.license : null;
 }
 
 function redirect(res, location) {
@@ -64,7 +58,7 @@ function redirect(res, location) {
 
 function text(res, status, body) {
   res.statusCode = status;
-  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Content-Type",  "text/plain; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
   res.end(body);
 }

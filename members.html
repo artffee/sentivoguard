@@ -4,37 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Members · SentivoGuard</title>
-  <meta name="description" content="Activate your SentivoGuard license to access the Windows installer download." />
+  <meta name="description" content="Sign in to download SentivoGuard. Free tier requires no payment, paid plans unlock the full suite." />
   <link rel="stylesheet" href="/landing.css" />
   <style>
     .members-shell {
-      max-width: 560px;
+      max-width: 600px;
       margin: 0 auto;
-      padding: 80px 32px 96px;
+      padding: 56px 32px 96px;
       position: relative; z-index: 1;
     }
-    .members-card {
+    .card-block {
       background: var(--bg-2);
       border: 1px solid var(--bg-4);
       border-radius: var(--radius);
-      padding: 36px 32px;
+      padding: 32px;
+      margin-bottom: 18px;
     }
-    .members-card.featured {
+    .card-block.featured {
       border-color: rgba(64,145,108,0.35);
       background:
         linear-gradient(135deg, rgba(64,145,108,0.10), transparent 60%),
         var(--bg-2);
     }
-    .members-card h1 {
-      font-size: 28px;
-      letter-spacing: -0.02em;
+    .card-block h2 {
+      font-size: 22px;
+      letter-spacing: -0.015em;
       margin: 6px 0 8px;
     }
-    .members-card p.lede {
+    .card-block p {
       color: var(--fg-1);
-      font-size: 15px;
-      margin: 0 0 22px;
+      font-size: 14px;
+      margin: 0 0 16px;
+      line-height: 1.55;
     }
+
     label {
       display: block;
       font-size: 11px;
@@ -49,16 +52,14 @@
       background: var(--bg-3);
       border: 1px solid var(--bg-4);
       color: var(--fg-0);
-      padding: 11px 14px;
+      padding: 10px 13px;
       border-radius: 8px;
       font-family: var(--font-mono);
       font-size: 13px;
-      transition: border-color 0.15s;
     }
     textarea.input { resize: vertical; min-height: 86px; }
     .input:focus { outline: none; border-color: var(--accent-2); }
-
-    .form-row + .form-row { margin-top: 14px; }
+    .form-row + .form-row { margin-top: 12px; }
 
     .alert {
       margin-top: 14px;
@@ -70,20 +71,33 @@
     .alert.ok  { background: rgba(82,183,136,0.10); border: 1px solid rgba(82,183,136,0.3); color: var(--ok); }
     .alert.hidden { display: none; }
 
-    .divider {
-      display: flex; align-items: center;
-      margin: 28px 0;
-      color: var(--fg-3);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
+    /* Guest tab switcher */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-bottom: 18px;
+      background: var(--bg-3);
+      border: 1px solid var(--bg-4);
+      border-radius: 10px;
+      padding: 4px;
     }
-    .divider::before, .divider::after {
-      content: ""; flex: 1;
-      border-top: 1px solid var(--bg-4);
+    .tabs button {
+      background: transparent;
+      border: 0;
+      padding: 9px 14px;
+      color: var(--fg-2);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 7px;
+      transition: background 0.15s, color 0.15s;
     }
-    .divider::before { margin-right: 14px; }
-    .divider::after  { margin-left: 14px; }
+    .tabs button.active {
+      background: var(--bg-2);
+      color: var(--fg-0);
+    }
 
     .pricing-mini {
       display: grid;
@@ -99,42 +113,68 @@
       color: var(--fg-0);
       cursor: pointer;
       font-family: inherit;
-      transition: border-color 0.15s, transform 0.1s, background 0.15s;
+      transition: border-color 0.15s, background 0.15s;
       text-align: center;
     }
-    .pricing-mini button:hover {
-      border-color: var(--accent-2);
-      transform: translateY(-1px);
-    }
+    .pricing-mini button:hover { border-color: var(--accent-2); }
     .pricing-mini button.featured {
       border-color: var(--accent-2);
       background: linear-gradient(180deg, rgba(64,145,108,0.10), var(--bg-3) 30%);
     }
-    .pricing-mini b {
-      display: block;
-      font-size: 13.5px;
+    .pricing-mini b { display: block; font-size: 13px; }
+    .pricing-mini .price { font-family: var(--font-mono); font-size: 16px; color: var(--accent-3); margin-top: 4px; }
+    .pricing-mini .small { display: block; font-size: 10.5px; color: var(--fg-2); margin-top: 4px; }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 16px 0 4px;
     }
-    .pricing-mini .price {
-      font-family: var(--font-mono);
-      font-size: 16px;
-      color: var(--accent-3);
-      margin-top: 4px;
+    .meta-cell {
+      background: var(--bg-3);
+      border: 1px solid var(--bg-4);
+      border-radius: 8px;
+      padding: 10px 14px;
     }
-    .pricing-mini .small {
-      display: block;
-      font-size: 10.5px;
+    .meta-cell .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: var(--fg-2);
-      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+    .meta-cell .value {
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      color: var(--fg-0);
     }
 
-    .members-card .footer-row {
+    .row { display: flex; gap: 8px; align-items: center; }
+    .footer-row {
       margin-top: 22px;
-      padding-top: 18px;
+      padding-top: 16px;
       border-top: 1px solid var(--bg-4);
       font-size: 12.5px;
       color: var(--fg-2);
     }
-    .members-card .footer-row a { color: var(--accent-3); }
+    .footer-row a { color: var(--accent-3); }
+    .footer-row .row { gap: 14px; }
+
+    .state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--fg-2);
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid var(--bg-4);
+      border-top-color: var(--accent-3);
+      border-radius: 50%;
+      margin: 0 auto;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -151,84 +191,147 @@
       <a href="/#tools">Tools</a>
       <a href="/#pricing">Pricing</a>
       <a href="/blog">Blog</a>
-      <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+      <a href="/login" id="nav-login">Sign in</a>
     </div>
-    <a class="btn btn-primary" href="/members" style="background: var(--bg-3); border-color: var(--accent-2);">Members</a>
+    <a class="btn btn-primary" href="/signup" id="nav-cta">Sign up</a>
   </nav>
 
   <main class="members-shell">
+    <div id="loading" class="state">
+      <div class="spinner"></div>
+      <p style="margin-top: 12px;">Loading…</p>
+    </div>
 
-    <!-- Login card -->
-    <div class="members-card featured" id="login-card">
-      <span class="eyebrow">Members area · activate to download</span>
-      <h1>Sign in with your license key</h1>
-      <p class="lede">
-        Paste the JWT key from your purchase email. The key activates your
-        session and unlocks the Windows installer download. Free tier users:
-        run <code class="mono" style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px; font-size: 12px;">node tools/issue-license.js you@email.com free</code>
-        in the cloned repo to mint a free test key.
-      </p>
+    <!-- ── LOGGED-IN VIEW ─────────────────────────────────────── -->
+    <div id="logged-in" style="display: none;">
+      <div class="card-block featured">
+        <span class="eyebrow">✓ Signed in</span>
+        <h2>Welcome back, <span id="member-email" class="grad" style="background: linear-gradient(135deg, var(--accent-3), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent;">friend</span></h2>
+        <p id="welcome-msg">Your account is active. Use the download button below to grab the Windows installer.</p>
 
-      <form id="login-form" novalidate>
-        <div class="form-row">
-          <label for="lic-key">License key</label>
-          <textarea
-            id="lic-key" name="token"
-            class="input"
-            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.…"
-            required></textarea>
+        <div class="meta-grid" id="meta-grid">
+          <div class="meta-cell">
+            <div class="label">Plan</div>
+            <div class="value" id="meta-plan">—</div>
+          </div>
+          <div class="meta-cell">
+            <div class="label">Devices</div>
+            <div class="value" id="meta-devices">—</div>
+          </div>
+          <div class="meta-cell">
+            <div class="label">Expires</div>
+            <div class="value" id="meta-expires">—</div>
+          </div>
         </div>
 
-        <div id="login-alert" class="alert err hidden"></div>
+        <div class="row" style="margin-top: 22px;">
+          <a class="btn btn-primary btn-lg" href="/members/download">
+            <span>↓</span> Go to download
+          </a>
+          <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
+        </div>
+      </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px; justify-content: center;">
-          Activate &amp; continue
-        </button>
-      </form>
+      <div class="card-block" id="upgrade-card" style="display: none;">
+        <h2 style="font-size: 18px;">Upgrade your plan</h2>
+        <p>You're on the Free plan. Upgrade to Plus for Vault, Nova AI, and 5 devices.</p>
 
-      <div class="footer-row">
-        Don't have a key yet? Pick a plan below — checkout takes 30 seconds.
+        <div class="pricing-mini">
+          <button data-plan="standard">
+            <b>Standard</b>
+            <span class="price">$29</span>
+            <span class="small">3 devices</span>
+          </button>
+          <button data-plan="plus" class="featured">
+            <b>Plus ★</b>
+            <span class="price">$49</span>
+            <span class="small">5 devices</span>
+          </button>
+          <button data-plan="ultimate">
+            <b>Ultimate</b>
+            <span class="price">$99</span>
+            <span class="small">unlimited</span>
+          </button>
+        </div>
+        <div id="upgrade-alert" class="alert hidden"></div>
       </div>
     </div>
 
-    <!-- Buy card -->
-    <div class="divider">or buy a license</div>
+    <!-- ── GUEST VIEW (not logged in) ─────────────────────────── -->
+    <div id="guest" style="display: none;">
 
-    <div class="members-card" id="buy-card">
-      <h1 style="font-size: 22px; margin-bottom: 4px;">Choose a plan</h1>
-      <p class="lede" style="font-size: 14px;">
-        Stripe Checkout — secure card payment, license key emailed instantly.
-      </p>
+      <div class="card-block featured">
+        <span class="eyebrow">Members area</span>
+        <h2>Sign in to download</h2>
+        <p>Free accounts include Disk Scan, Quarantine, and the basic SentivoClean — no payment required.</p>
 
-      <div class="form-row">
-        <label for="buy-email">Email for the license key</label>
-        <input id="buy-email" type="email" class="input" placeholder="you@example.com" />
+        <div class="row" style="margin-top: 16px;">
+          <a class="btn btn-primary" href="/signup">Create account</a>
+          <a class="btn btn-ghost"   href="/login">Sign in</a>
+        </div>
       </div>
 
-      <div class="pricing-mini">
-        <button data-plan="standard">
-          <b>Standard</b>
-          <span class="price">$29</span>
-          <span class="small">3 devices</span>
-        </button>
-        <button data-plan="plus" class="featured">
-          <b>Plus ★</b>
-          <span class="price">$49</span>
-          <span class="small">5 devices · Vault + Nova</span>
-        </button>
-        <button data-plan="ultimate">
-          <b>Ultimate</b>
-          <span class="price">$99</span>
-          <span class="small">unlimited · all 14 tools</span>
-        </button>
+      <div class="card-block">
+        <div class="tabs">
+          <button class="active" data-tab="buy">Buy a license</button>
+          <button data-tab="paste">Paste existing key</button>
+        </div>
+
+        <!-- Tab: Buy -->
+        <div id="tab-buy">
+          <h2 style="font-size: 18px; margin-top: 0;">Pick a plan</h2>
+          <p>Stripe Checkout — license emailed instantly. Plans below.</p>
+
+          <div class="form-row">
+            <label for="buy-email">Email for the license key</label>
+            <input id="buy-email" type="email" class="input" placeholder="you@example.com" />
+          </div>
+
+          <div class="pricing-mini">
+            <button data-plan="standard">
+              <b>Standard</b>
+              <span class="price">$29</span>
+              <span class="small">3 devices</span>
+            </button>
+            <button data-plan="plus" class="featured">
+              <b>Plus ★</b>
+              <span class="price">$49</span>
+              <span class="small">5 devices</span>
+            </button>
+            <button data-plan="ultimate">
+              <b>Ultimate</b>
+              <span class="price">$99</span>
+              <span class="small">unlimited</span>
+            </button>
+          </div>
+          <div id="buy-alert" class="alert hidden"></div>
+        </div>
+
+        <!-- Tab: Paste -->
+        <div id="tab-paste" style="display: none;">
+          <h2 style="font-size: 18px; margin-top: 0;">Paste your license key</h2>
+          <p>Already have a JWT? Activate it directly without an account.</p>
+
+          <form id="lic-form">
+            <div class="form-row">
+              <label for="lic-key">License key</label>
+              <textarea id="lic-key" class="input"
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.…" required></textarea>
+            </div>
+            <div id="lic-alert" class="alert hidden"></div>
+            <button type="submit" class="btn btn-primary"
+                    style="width: 100%; margin-top: 14px; justify-content: center;">
+              Activate
+            </button>
+          </form>
+        </div>
+
+        <div class="footer-row">
+          Free tier? <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">Clone the repo</a>
+          and mint your own free key — no payment required.
+        </div>
       </div>
 
-      <div id="buy-alert" class="alert hidden" style="margin-top: 18px;"></div>
-
-      <div class="footer-row">
-        Free tier? <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">Clone the repo</a>
-        and mint your own free key — no payment needed for Free + the basic Disk Scan / Quarantine.
-      </div>
     </div>
 
   </main>
@@ -264,84 +367,161 @@
   </footer>
 
   <script>
-    // ── Pre-fill from query param (e.g. dev-mode mint) or auto-redirect if logged in ──
-    (async function () {
-      // If a test_token query param is present, paste it into the form.
-      const params = new URLSearchParams(location.search);
-      const testToken = params.get("test_token");
-      if (testToken) {
-        document.getElementById("lic-key").value = testToken;
-      }
-      const errParam = params.get("error");
-      if (errParam) {
-        showAlert("login-alert", "err",
-          errParam === "login_required"
-            ? "Please activate a license key to access the download."
-            : "Activation expired or invalid: " + errParam);
-      }
+    const params = new URLSearchParams(location.search);
 
-      // If already a member, jump to /members/download.
-      try {
-        const r = await fetch("/api/members").then(r => r.json());
-        if (r.ok && r.member) {
-          location.href = "/members/download";
-        }
-      } catch {}
+    (async function () {
+      const me = await fetch("/api/auth/me").then(r => r.json()).catch(() => ({ ok: false }));
+      document.getElementById("loading").style.display = "none";
+
+      if (me.ok && me.authenticated) {
+        // Logged in
+        document.getElementById("logged-in").style.display = "block";
+        renderLoggedIn(me);
+      } else {
+        // Guest
+        document.getElementById("guest").style.display = "block";
+        wireGuest();
+      }
     })();
 
-    // ── Login form ──
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const token = document.getElementById("lic-key").value.trim();
-      if (!token) return;
-      hideAlert("login-alert");
+    // ── Logged-in view ──
+    function renderLoggedIn(me) {
+      const cap = (s) => s ? s[0].toUpperCase() + s.slice(1) : s;
+      document.getElementById("member-email").textContent = me.user.email;
 
-      const resp = await fetch("/api/license/verify", {
-        method:  "POST",
-        headers: { "content-type": "application/json" },
-        body:    JSON.stringify({ token })
-      }).then(r => r.json()).catch(() => ({ ok: false, error: "network" }));
+      // Update top nav (remove Sign in / Sign up, replace with email)
+      const navLogin = document.getElementById("nav-login");
+      const navCta   = document.getElementById("nav-cta");
+      navLogin.textContent = me.user.email;
+      navLogin.removeAttribute("href");
+      navLogin.style.cursor = "default";
+      navCta.textContent = "Sign out";
+      navCta.href = "/api/auth/logout";
 
-      if (!resp.ok) {
-        showAlert("login-alert", "err", "Activation failed: " + (resp.error || "unknown"));
-        return;
+      const lic = me.license;
+      if (lic) {
+        document.getElementById("meta-plan").textContent    = cap(lic.plan);
+        document.getElementById("meta-devices").textContent = lic.devices === 999 ? "Unlimited" : String(lic.devices);
+        const days = Math.max(0, Math.floor((lic.expires * 1000 - Date.now()) / 86400000));
+        document.getElementById("meta-expires").textContent = days + " days";
+
+        if (lic.plan === "free") {
+          document.getElementById("welcome-msg").textContent =
+            "You're on the Free plan. Download the installer below or upgrade for the full suite.";
+          document.getElementById("upgrade-card").style.display = "block";
+          wireUpgrade();
+        }
+      } else {
+        document.getElementById("meta-plan").textContent    = "(none)";
+        document.getElementById("meta-devices").textContent = "—";
+        document.getElementById("meta-expires").textContent = "—";
+        document.getElementById("welcome-msg").textContent =
+          "No license attached. Pick a plan below to activate downloads.";
+        document.getElementById("upgrade-card").style.display = "block";
+        wireUpgrade();
       }
-      // Cookie is now set — redirect to the gated download page.
-      location.href = "/members/download";
-    });
 
-    // ── Buy buttons ──
-    document.querySelectorAll(".pricing-mini button").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const plan  = btn.dataset.plan;
-        const email = document.getElementById("buy-email").value.trim();
-        hideAlert("buy-alert");
+      if (params.get("welcome")) {
+        document.getElementById("welcome-msg").textContent =
+          "🎉 Account created! Free Disk Scan + Quarantine are unlocked. Download below.";
+      }
+    }
 
-        const resp = await fetch("/api/checkout", {
+    function wireUpgrade() {
+      document.querySelectorAll("#upgrade-card .pricing-mini button").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const plan = btn.dataset.plan;
+          await checkout(plan, "", "upgrade-alert");
+        });
+      });
+    }
+
+    // ── Guest view ──
+    function wireGuest() {
+      // Tab switching
+      document.querySelectorAll(".tabs button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const tab = btn.dataset.tab;
+          document.getElementById("tab-buy").style.display   = tab === "buy"   ? "" : "none";
+          document.getElementById("tab-paste").style.display = tab === "paste" ? "" : "none";
+        });
+      });
+
+      // Buy buttons
+      document.querySelectorAll("#tab-buy .pricing-mini button").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const plan  = btn.dataset.plan;
+          const email = document.getElementById("buy-email").value.trim();
+          if (!email) {
+            showAlert("buy-alert", "err", "Email required for the license key.");
+            return;
+          }
+          await checkout(plan, email, "buy-alert");
+        });
+      });
+
+      // Paste form
+      document.getElementById("lic-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const token = document.getElementById("lic-key").value.trim();
+        if (!token) return;
+        const resp = await fetch("/api/license/verify", {
           method:  "POST",
           headers: { "content-type": "application/json" },
-          body:    JSON.stringify({ plan, email })
+          body:    JSON.stringify({ token })
         }).then(r => r.json()).catch(() => ({ ok: false, error: "network" }));
 
         if (!resp.ok) {
-          let msg = "Checkout failed: " + (resp.error || "unknown");
-          if (resp.message) msg += " — " + resp.message;
-          showAlert("buy-alert", "err", msg);
+          showAlert("lic-alert", "err", "Activation failed: " + (resp.error || "unknown"));
           return;
         }
-
-        if (resp.devMode) {
-          // Dev: redirect with the minted token pre-filled into the activation form
-          showAlert("buy-alert", "ok",
-            "Test license minted (Stripe not configured). Activating now…");
-          location.href = "/members?test_token=" + encodeURIComponent(resp.token);
-          return;
-        }
-
-        // Production: redirect to Stripe Checkout
-        location.href = resp.url;
+        location.href = "/members/download";
       });
-    });
+    }
+
+    // ── Shared checkout ──
+    async function checkout(plan, email, alertId) {
+      hideAlert(alertId);
+      const resp = await fetch("/api/checkout", {
+        method:  "POST",
+        headers: { "content-type": "application/json" },
+        body:    JSON.stringify({ plan, email })
+      }).then(r => r.json()).catch(() => ({ ok: false, error: "network" }));
+
+      if (!resp.ok) {
+        showAlert(alertId, "err",
+          "Checkout failed: " + (resp.error || "unknown") +
+          (resp.message ? " — " + resp.message : ""));
+        return;
+      }
+
+      if (resp.devMode) {
+        if (resp.attached) {
+          showAlert(alertId, "ok", "Dev license attached to your session. Reloading…");
+          setTimeout(() => location.reload(), 700);
+        } else if (resp.token) {
+          // Not logged in — paste the token to activate
+          showAlert(alertId, "ok", "Test license minted. Activating…");
+          await fetch("/api/license/verify", {
+            method:  "POST",
+            headers: { "content-type": "application/json" },
+            body:    JSON.stringify({ token: resp.token })
+          });
+          location.href = "/members/download";
+        }
+        return;
+      }
+      // Production — Stripe redirect
+      location.href = resp.url;
+    }
+
+    function signOut() {
+      fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+        location.href = "/";
+      });
+    }
 
     function showAlert(id, kind, msg) {
       const el = document.getElementById(id);

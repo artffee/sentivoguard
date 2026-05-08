@@ -1,56 +1,72 @@
-// GET  /api/members  — returns current member info if a valid sg_license cookie is set
-// POST /api/members/logout — clears the cookie  (use ?action=logout via GET too)
+// GET  /api/members                — returns current member context.
+// GET  /api/members?action=logout  — clears all auth cookies, returns ok.
+// DELETE /api/members              — same as ?action=logout.
 //
-// Used by the /members and /members/download pages to gate the UI client-side.
+// "Member" is true if EITHER:
+//   - sg_license cookie is a valid license JWT (legacy path, license-only),
+//   - OR sg_session cookie carries a user with an attached license.
 
-const { verify } = require("../server/license");
-
-const COOKIE = "sg_license";
+const { verify }      = require("../server/license");
+const { readSession } = require("../lib/users");
+const { readCookie, clearCookie } = require("../lib/cookies");
 
 module.exports = async function handler(req, res) {
-  // Logout — both query (?action=logout) and explicit POST work.
   if ((req.query && req.query.action === "logout") || req.method === "DELETE") {
-    res.setHeader("Set-Cookie",
-      `${COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
-    );
+    clearCookie(res, "sg_license");
+    clearCookie(res, "sg_session");
     return json(res, 200, { ok: true, loggedOut: true });
   }
 
-  const token = readCookie(req, COOKIE);
-  if (!token) return json(res, 200, { ok: true, member: false });
+  const sessionToken = readCookie(req, "sg_session");
+  const licenseToken = readCookie(req, "sg_license");
 
-  const r = verify(token);
-  if (!r.ok) {
-    // Bad cookie — clear it.
-    res.setHeader("Set-Cookie",
-      `${COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
-    );
-    return json(res, 200, { ok: true, member: false, reason: r.error });
+  const user = sessionToken ? readSession(sessionToken) : null;
+
+  let license = null;
+  let licenseSource = null;
+
+  if (licenseToken) {
+    const r = verify(licenseToken);
+    if (r.ok) { license = liteLicense(r); licenseSource = "cookie"; }
+  }
+  if (!license && user && user.license) {
+    const r = verify(user.license);
+    if (r.ok) { license = liteLicense(r); licenseSource = "session"; }
   }
 
+  // A "member" is anyone with a valid license — either path counts.
+  const member = !!license;
+
   return json(res, 200, {
-    ok:      true,
-    member:  true,
+    ok:            true,
+    member,
+    authenticated: !!user,
+    user:          user ? { email: user.email, createdAt: user.createdAt } : null,
+    license,
+    licenseSource,
+    // Mirror the lite license fields at the top level for backward compat
+    // with the existing /members/download client.
+    email:   license ? license.email   : (user ? user.email : null),
+    plan:    license ? license.plan    : null,
+    devices: license ? license.devices : null,
+    expires: license ? license.expires : null,
+    tier:    license ? license.tier    : null
+  });
+};
+
+function liteLicense(r) {
+  return {
     email:   r.payload.sub,
     plan:    r.payload.plan,
     devices: r.payload.devices,
     expires: r.payload.exp,
     tier:    r.tier
-  });
-};
-
-function readCookie(req, name) {
-  const raw = req.headers.cookie || "";
-  for (const part of raw.split(";")) {
-    const [k, v] = part.trim().split("=");
-    if (k === name) return decodeURIComponent(v || "");
-  }
-  return null;
+  };
 }
 
 function json(res, status, obj) {
   res.statusCode = status;
-  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Content-Type",  "application/json");
   res.setHeader("Cache-Control", "no-store");
   res.end(JSON.stringify(obj));
 }

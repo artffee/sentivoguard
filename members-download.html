@@ -273,28 +273,30 @@
     (async function () {
       let info;
       try {
-        info = await fetch("/api/members").then(r => r.json());
+        info = await fetch("/api/auth/me").then(r => r.json());
       } catch {
         info = { ok: false };
       }
 
-      if (!info.ok || !info.member) {
-        // Should be very rare since /api/download redirects to /members on bad cookie,
-        // but if the user landed here directly with no cookie, send them home.
+      // Member access requires a license — either via sg_license cookie or
+      // attached to the sg_session user record.
+      if (!info.ok || !info.license) {
         location.href = "/members?error=login_required";
         return;
       }
 
-      // Render member content
       document.getElementById("loading").style.display = "none";
       document.getElementById("member-content").style.display = "block";
 
       const cap = (s) => s ? s[0].toUpperCase() + s.slice(1) : s;
-      document.getElementById("member-email").textContent = info.email || "member";
-      document.getElementById("member-plan").textContent  = cap(info.plan);
-      document.getElementById("meta-plan").textContent    = cap(info.plan);
-      document.getElementById("meta-devices").textContent = info.devices === 999 ? "Unlimited" : String(info.devices);
-      const expiresAt = new Date(info.expires * 1000);
+      const lic   = info.license;
+      const email = (info.user && info.user.email) || lic.email || "member";
+
+      document.getElementById("member-email").textContent = email;
+      document.getElementById("member-plan").textContent  = cap(lic.plan);
+      document.getElementById("meta-plan").textContent    = cap(lic.plan);
+      document.getElementById("meta-devices").textContent = lic.devices === 999 ? "Unlimited" : String(lic.devices);
+      const expiresAt = new Date(lic.expires * 1000);
       const days = Math.max(0, Math.floor((expiresAt - Date.now()) / 86400000));
       document.getElementById("meta-expires").textContent =
         expiresAt.toLocaleDateString() + " (" + days + " days)";
