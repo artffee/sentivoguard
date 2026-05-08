@@ -25,9 +25,9 @@
       <a href="/#scanner">Scanner</a>
       <a href="/#pricing">Pricing</a>
       <a href="/blog" style="color: var(--accent-3);">Blog</a>
-      <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+      <a href="/login">Sign in</a>
     </div>
-    <a class="btn btn-primary" href="/#download">Download</a>
+    <a class="btn btn-primary" href="/signup">Sign up</a>
   </nav>
 
   <article class="article">
@@ -338,20 +338,18 @@
       </p>
 
       <p>
-        The full source is <a href="https://github.com/artffee/sentivoguard"
-        target="_blank" rel="noopener">on GitHub</a>. The scanner core is in
-        <code>server/scanner-disk.js</code>, the patterns are in
-        <code>server/patterns.js</code>, and the streaming endpoint is in
-        <code>.server.js</code>. The whole pipeline — disk walker, pattern
-        engine, NDJSON streaming, abort handling, real-time watcher,
-        VirusTotal client — comes in under 1,500 lines of Node.
+        The whole pipeline — disk walker, pattern engine, NDJSON streaming,
+        abort handling, real-time watcher, VirusTotal client — comes in
+        under 1,500 lines of Node. The scanner core lives in
+        <code>scanner-disk.js</code>, the patterns in <code>patterns.js</code>,
+        and the streaming endpoint in <code>.server.js</code>. Everything
+        ships inside the Windows installer.
       </p>
 
       <p class="closer">
-        If you want to try it, the <a href="/#download">Windows .exe</a> is
-        unsigned but functional. Or clone the repo and run <code>npm
-        install &amp;&amp; npm start</code>. Either way, your Disk Scan view
-        will look something like this in about eight seconds:
+        If you want to try it, <a href="/members">sign up</a> for a free
+        account and grab the Windows installer. Your Disk Scan view will
+        look something like this in about eight seconds:
       </p>
 
 <pre class="code"><span class="c-ok">▶ Quick Scan complete · SUSPICIOUS</span>
@@ -393,11 +391,13 @@
       <div>
         <h4>Resources</h4>
         <a href="/blog">Blog</a>
-        <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+        <a href="/members">Members</a>
+        <a href="/login">Sign in</a>
       </div>
       <div>
         <h4>Legal</h4>
-        <a href="https://github.com/artffee/sentivoguard/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#terms">Terms</a>
       </div>
     </div>
     <div class="foot-bottom">
