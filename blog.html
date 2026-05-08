@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog · SentivoGuard</title>
+  <meta name="description" content="Engineering writeups, security research, and product updates from the SentivoGuard team." />
+  <meta property="og:title" content="Blog · SentivoGuard" />
+  <meta property="og:description" content="How we built a real-time disk scanner in Node.js, supply-chain attack patterns, and what's new in v2.1." />
+  <link rel="stylesheet" href="landing.css" />
+  <style>
+    .blog-hero {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 120px 32px 56px;
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .blog-hero h1 {
+      font-size: clamp(40px, 5.5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin: 14px 0 12px;
+      line-height: 1.1;
+    }
+    .blog-hero p {
+      color: var(--fg-1);
+      font-size: 17px;
+      margin: 0 auto;
+      max-width: 600px;
+    }
+
+    .post-list {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 32px 32px 96px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative; z-index: 1;
+    }
+    .post-card {
+      background: var(--bg-2);
+      border: 1px solid var(--bg-4);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: border-color 0.18s, transform 0.18s, background 0.18s;
+    }
+    .post-card:hover {
+      border-color: rgba(64,145,108,0.5);
+      background: var(--bg-3);
+      transform: translateY(-2px);
+      color: inherit;
+    }
+    .post-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--fg-2);
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .post-meta .tag-cat {
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(64,145,108,0.12);
+      color: var(--accent-3);
+      border: 1px solid rgba(64,145,108,0.3);
+    }
+    .post-card h2 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin: 0 0 10px;
+      line-height: 1.25;
+    }
+    .post-card p {
+      color: var(--fg-1);
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    .post-card .read-more {
+      margin-top: 14px;
+      color: var(--accent-3);
+      font-weight: 600;
+      font-size: 13.5px;
+      display: inline-block;
+    }
+
+    @media (max-width: 560px) {
+      .post-card { padding: 22px; }
+      .post-card h2 { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <nav class="nav">
+    <a class="brand" href="/">
+      <span class="logo">
+        <span class="logo-block"></span><span class="logo-block"></span>
+      </span>
+      <span class="brand-name">SentivoGuard</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#tools">Tools</a>
+      <a href="/#scanner">Scanner</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/blog" style="color: var(--accent-3);">Blog</a>
+      <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <a class="btn btn-primary" href="/#download">Download</a>
+  </nav>
+
+  <header class="blog-hero">
+    <span class="eyebrow">Blog · engineering &amp; security</span>
+    <h1>What we're building<br /><span class="grad">and what we're learning.</span></h1>
+    <p>Architecture writeups, supply-chain research, and release notes from the SentivoGuard team.</p>
+  </header>
+
+  <section class="post-list">
+
+    <a class="post-card" href="/blog/real-time-disk-scanner">
+      <div class="post-meta">
+        <span class="tag-cat">Engineering</span>
+        <span>2026-05-08</span>
+        <span>·</span>
+        <span>14 min read</span>
+      </div>
+      <h2>How we built a real-time disk scanner in Node.js with zero external dependencies</h2>
+      <p>
+        SentivoGuard scans 16,000 files in 7.6 seconds, streams findings live to the
+        UI, and runs on Windows / macOS / Linux without a single npm install.
+        Here's the architecture: async generators, NDJSON over chunked HTTP,
+        debounced fs.watch, and pattern-based threat detection — all in plain
+        Node 22 standard library.
+      </p>
+      <span class="read-more">Read the writeup →</span>
+    </a>
+
+    <a class="post-card" href="/blog/launching-sentivoguard-21">
+      <div class="post-meta">
+        <span class="tag-cat">Release</span>
+        <span>2026-05-08</span>
+        <span>·</span>
+        <span>3 min read</span>
+      </div>
+      <h2>Launching SentivoGuard 2.1 — real-time protection, encrypted vault, AV-grade detection</h2>
+      <p>
+        v2.1 is the first public release. Real disk scanning, reversible
+        quarantine with SHA-256 verification, AES-256-GCM password vault,
+        VirusTotal integration, and a real-time file watcher daemon. Free tier
+        included, Plus from $49/year.
+      </p>
+      <span class="read-more">Read the announcement →</span>
+    </a>
+
+  </section>
+
+  <footer class="foot">
+    <div class="foot-row">
+      <div>
+        <div class="brand">
+          <span class="logo"><span class="logo-block"></span><span class="logo-block"></span></span>
+          <span class="brand-name">SentivoGuard</span>
+        </div>
+        <p class="muted">Complete privacy &amp; security suite. v2.1 · Windows.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="/#tools">Tools</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/#download">Download</a>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <a href="/blog">Blog</a>
+        <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/artffee/sentivoguard/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="https://github.com/artffee/sentivoguard/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      © 2026 SentivoGuard · All rights reserved
+    </div>
+  </footer>
+</body>
+</html>

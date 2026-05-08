@@ -1,0 +1,171 @@
+/* SentivoGuard — long-form blog typography. Loads after landing.css. */
+
+.article {
+  position: relative; z-index: 1;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 80px 32px 56px;
+}
+
+.article-head {
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--bg-4);
+}
+
+.article-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--fg-2);
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.article-meta .tag-cat {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(64,145,108,0.12);
+  color: var(--accent-3);
+  border: 1px solid rgba(64,145,108,0.3);
+}
+
+.article-head h1 {
+  font-size: clamp(32px, 4.6vw, 52px);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin: 0 0 18px;
+}
+
+.article-head .lede {
+  font-size: 19px;
+  color: var(--fg-1);
+  line-height: 1.55;
+  margin: 0;
+}
+.article-head .lede b { color: var(--fg-0); font-weight: 700; }
+
+/* ── Body typography ──────────────────────────── */
+.article-body {
+  font-size: 17px;
+  line-height: 1.72;
+  color: var(--fg-1);
+}
+
+.article-body p {
+  margin: 0 0 22px;
+}
+.article-body p b { color: var(--fg-0); font-weight: 600; }
+
+.article-body h2 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--fg-0);
+  margin: 56px 0 18px;
+  line-height: 1.25;
+}
+
+.article-body h3 {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--fg-0);
+  margin: 36px 0 14px;
+}
+
+.article-body ul, .article-body ol {
+  margin: 0 0 24px;
+  padding-left: 22px;
+}
+.article-body li {
+  margin-bottom: 10px;
+}
+.article-body li b { color: var(--fg-0); font-weight: 600; }
+
+.article-body a {
+  color: var(--accent-3);
+  border-bottom: 1px dashed rgba(116,198,157,0.35);
+  text-decoration: none;
+}
+.article-body a:hover {
+  color: var(--fg-0);
+  border-bottom-color: var(--fg-0);
+}
+
+.article-body code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--bg-4);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent-3);
+  white-space: nowrap;
+}
+
+.article-body pre.code {
+  background: #050807;
+  border: 1px solid var(--bg-4);
+  border-radius: 10px;
+  padding: 22px 24px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--fg-1);
+  overflow-x: auto;
+  margin: 0 0 28px;
+  /* Slight outdent so code feels visually distinct */
+  margin-left: -8px;
+  margin-right: -8px;
+  box-shadow:
+    0 12px 32px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(64,145,108,0.10);
+}
+.article-body pre.code code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  white-space: pre;
+}
+
+/* Hand-rolled syntax tokens */
+.c-key    { color: #c896fa; }                 /* keywords */
+.c-fn     { color: #74c69d; }                 /* function names */
+.c-str    { color: #f4a261; }                 /* strings / property keys */
+.c-com    { color: #5a6f64; font-style: italic; } /* comments */
+.c-ok     { color: var(--ok); }
+.c-warn   { color: var(--warn); }
+.c-danger { color: var(--danger); }
+.c-dim    { color: var(--fg-3); }
+
+.article-body .closer {
+  margin-top: 36px;
+  padding-top: 22px;
+  border-top: 1px solid var(--bg-4);
+  color: var(--fg-1);
+}
+
+/* ── Article footer (back/forward CTAs) ───────── */
+.article-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--bg-4);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 560px) {
+  .article { padding: 56px 20px 40px; }
+  .article-body { font-size: 16px; line-height: 1.68; }
+  .article-body pre.code { padding: 16px 18px; font-size: 12.5px; }
+  .article-foot { flex-direction: column; }
+  .article-foot .btn { justify-content: center; }
+}

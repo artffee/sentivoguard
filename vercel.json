@@ -3,7 +3,10 @@
   "version": 2,
   "public": true,
   "rewrites": [
-    { "source": "/", "destination": "/landing.html" }
+    { "source": "/",                              "destination": "/landing.html" },
+    { "source": "/blog",                          "destination": "/blog.html"    },
+    { "source": "/blog/real-time-disk-scanner",   "destination": "/blog-real-time-disk-scanner.html" },
+    { "source": "/blog/launching-sentivoguard-21","destination": "/blog-launching-sentivoguard-21.html" }
   ],
   "headers": [
     {

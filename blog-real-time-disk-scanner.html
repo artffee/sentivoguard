@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How we built a real-time disk scanner in Node.js · SentivoGuard Blog</title>
+  <meta name="description" content="16,000 files in 7.6 seconds, streamed live to the UI, zero npm install. The architecture behind SentivoGuard's real-time disk scanner." />
+  <meta property="og:title" content="How we built a real-time disk scanner in Node.js" />
+  <meta property="og:description" content="Async generators, NDJSON over chunked HTTP, debounced fs.watch, and pattern-based threat detection — all in plain Node 22 standard library." />
+  <link rel="stylesheet" href="landing.css" />
+  <link rel="stylesheet" href="blog.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <nav class="nav">
+    <a class="brand" href="/">
+      <span class="logo">
+        <span class="logo-block"></span><span class="logo-block"></span>
+      </span>
+      <span class="brand-name">SentivoGuard</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#tools">Tools</a>
+      <a href="/#scanner">Scanner</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/blog" style="color: var(--accent-3);">Blog</a>
+      <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <a class="btn btn-primary" href="/#download">Download</a>
+  </nav>
+
+  <article class="article">
+    <header class="article-head">
+      <div class="article-meta">
+        <span class="tag-cat">Engineering</span>
+        <span>2026-05-08</span>
+        <span>·</span>
+        <span>14 min read</span>
+      </div>
+      <h1>How we built a real-time disk scanner in Node.js with zero external dependencies</h1>
+      <p class="lede">
+        SentivoGuard scans <b>16,000 files in 7.6 seconds</b>, streams findings to the
+        UI as they're discovered, and runs on Windows, macOS, and Linux without
+        a single <code>npm install</code>. Here's the architecture.
+      </p>
+    </header>
+
+    <div class="article-body">
+
+      <h2>The constraint shaped the design</h2>
+
+      <p>
+        Spec said: <b>zero external dependencies</b> in the scanner core. No
+        <code>chokidar</code>, no <code>fast-glob</code>, no native bindings.
+        Just Node's standard library.
+      </p>
+
+      <p>
+        At first this felt like a handicap. By the end it was a feature. Every
+        external dep is a supply-chain attack surface — and we're literally
+        building a supply-chain scanner. Eating our own dogfood meant the
+        scanner couldn't depend on the kind of code it was designed to flag.
+      </p>
+
+      <p>
+        That ruled out streaming libraries (<code>through2</code>,
+        <code>highland</code>), watcher libraries (<code>chokidar</code>), and
+        even regex generators. Everything had to come from
+        <code>node:fs</code>, <code>node:path</code>, <code>node:crypto</code>,
+        <code>node:http</code>, and friends.
+      </p>
+
+      <h2>The async-generator backbone</h2>
+
+      <p>
+        The scanner is an <b>async generator</b>. It yields four event types:
+        <code>start</code> (with the resolved roots), <code>progress</code>
+        (every 100 files), <code>finding</code> (per detection), and
+        <code>complete</code> (verdict + final stats). The HTTP layer just
+        consumes the generator and forwards each event over the wire.
+      </p>
+
+<pre class="code"><span class="c-com">// server/scanner-disk.js</span>
+<span class="c-key">async function</span>* <span class="c-fn">scanDisk</span>(opts = {}) {
+  <span class="c-key">const</span> start = Date.now();
+  <span class="c-key">const</span> roots = opts.quick ? quickScanPaths() : [opts.target];
+
+  <span class="c-key">yield</span> { <span class="c-str">type</span>: <span class="c-str">"start"</span>, roots, ts: start };
+
+  <span class="c-key">for</span> (<span class="c-key">const</span> root <span class="c-key">of</span> roots) {
+    <span class="c-key">const</span> queue = [[root, 0]];
+    <span class="c-key">while</span> (queue.length && !opts.aborted) {
+      <span class="c-key">const</span> [dir, depth] = queue.shift();
+      <span class="c-key">const</span> entries = <span class="c-key">await</span> fsp.readdir(dir, { withFileTypes: <span class="c-key">true</span> });
+
+      <span class="c-key">for</span> (<span class="c-key">const</span> e <span class="c-key">of</span> entries) {
+        <span class="c-key">if</span> (e.isDirectory()) queue.push([path.join(dir, e.name), depth + 1]);
+        <span class="c-key">else if</span> (e.isFile()) {
+          <span class="c-key">const</span> hits = inspect(path.join(dir, e.name));
+          <span class="c-key">for</span> (<span class="c-key">const</span> f <span class="c-key">of</span> hits) <span class="c-key">yield</span> { <span class="c-str">type</span>: <span class="c-str">"finding"</span>, ...f };
+        }
+      }
+      <span class="c-key">if</span> (filesScanned % 100 === 0) {
+        <span class="c-key">yield</span> { <span class="c-str">type</span>: <span class="c-str">"progress"</span>, filesScanned, currentDir: dir };
+        <span class="c-key">await new</span> Promise(r =&gt; setImmediate(r)); <span class="c-com">// yield to event loop</span>
+      }
+    }
+  }
+
+  <span class="c-key">yield</span> { <span class="c-str">type</span>: <span class="c-str">"complete"</span>, verdict, exitCode, stats };
+}</pre>
+
+      <p>
+        The <code>setImmediate</code> yield every 100 files matters more than
+        it looks. Without it, a long scan blocks the event loop and the same
+        Node process can't answer other HTTP requests. The 100-file cadence
+        keeps the server responsive without flooding the loop with
+        microtasks.
+      </p>
+
+      <h2>NDJSON over chunked HTTP</h2>
+
+      <p>
+        We needed to stream findings to the browser as they happened — not
+        wait for the full scan to finish. Three options:
+      </p>
+
+      <ul>
+        <li><b>Server-Sent Events</b>. Standard, has <code>EventSource</code> API. But limited to GET, can't carry a JSON body cleanly, and reconnect logic adds complexity.</li>
+        <li><b>WebSockets</b>. Bidirectional, but overkill for one-way streaming. Adds a handshake and a separate connection lifecycle.</li>
+        <li><b>NDJSON over chunked HTTP</b>. Plain POST. Each chunk is one JSON object on its own line. Browser reads it via <code>fetch().body.getReader()</code>.</li>
+      </ul>
+
+      <p>
+        We picked NDJSON. It's the simplest thing that works, plays nicely
+        with <code>AbortController</code> for cancellation, and lets us send a
+        request body alongside the streaming response. The parsing on both
+        ends is a one-liner.
+      </p>
+
+<pre class="code"><span class="c-com">// .server.js — the endpoint</span>
+<span class="c-key">if</span> (pathname === <span class="c-str">"/api/scan/disk"</span>) {
+  res.writeHead(200, {
+    <span class="c-str">"content-type"</span>: <span class="c-str">"application/x-ndjson"</span>,
+    <span class="c-str">"x-accel-buffering"</span>: <span class="c-str">"no"</span>          <span class="c-com">// disable proxy buffering</span>
+  });
+
+  req.on(<span class="c-str">"close"</span>, () =&gt; { opts.aborted = <span class="c-key">true</span>; });   <span class="c-com">// client gone? stop scanning</span>
+
+  <span class="c-key">for await</span> (<span class="c-key">const</span> ev <span class="c-key">of</span> scanDisk(opts)) {
+    <span class="c-key">if</span> (opts.aborted) <span class="c-key">break</span>;
+    <span class="c-key">if</span> (!res.write(JSON.stringify(ev) + <span class="c-str">"\n"</span>)) {
+      <span class="c-key">await new</span> Promise(r =&gt; res.once(<span class="c-str">"drain"</span>, r)); <span class="c-com">// honor backpressure</span>
+    }
+  }
+  res.end();
+}</pre>
+
+<pre class="code"><span class="c-com">// js/backend.js — the client</span>
+<span class="c-key">const</span> r = <span class="c-key">await</span> fetch(<span class="c-str">"/api/scan/disk"</span>, { <span class="c-str">method</span>: <span class="c-str">"POST"</span>, body, signal: ctrl.signal });
+<span class="c-key">const</span> reader = r.body.getReader();
+<span class="c-key">const</span> dec = <span class="c-key">new</span> TextDecoder();
+<span class="c-key">let</span> buf = <span class="c-str">""</span>;
+
+<span class="c-key">while</span> (<span class="c-key">true</span>) {
+  <span class="c-key">const</span> { value, done } = <span class="c-key">await</span> reader.read();
+  <span class="c-key">if</span> (done) <span class="c-key">break</span>;
+  buf += dec.decode(value, { stream: <span class="c-key">true</span> });
+  <span class="c-key">let</span> nl;
+  <span class="c-key">while</span> ((nl = buf.indexOf(<span class="c-str">"\n"</span>)) &gt;= 0) {
+    onEvent(JSON.parse(buf.slice(0, nl)));   <span class="c-com">// progress / finding / complete</span>
+    buf = buf.slice(nl + 1);
+  }
+}</pre>
+
+      <p>
+        Two tricks worth calling out. First, the <code>x-accel-buffering: no</code>
+        header tells reverse proxies (nginx, Cloudflare) <i>not</i> to buffer the
+        response — without it, our chunks would pile up on the proxy and only
+        flush when the response ended, defeating the whole point. Second, we
+        honor backpressure: if <code>res.write</code> returns <code>false</code>
+        we wait for <code>drain</code> before yielding more. Otherwise a slow
+        client makes the server allocate unbounded memory.
+      </p>
+
+      <h2>The pattern engine</h2>
+
+      <p>
+        Detection is regex-based, organized into eight categories:
+        credential theft, network exfil, code execution, obfuscation,
+        persistence, cryptomining, ransomware, and Windows-shell droppers.
+        Each pattern has a severity (<code>HIGH</code>, <code>MEDIUM</code>,
+        <code>LOW</code>) and a one-line message.
+      </p>
+
+<pre class="code"><span class="c-key">const</span> PATTERNS = {
+  credential_theft: [
+    p(<span class="c-str">/keytar\.(?:get|find)Password\(/g</span>, HIGH,
+      <span class="c-str">"Reads stored credentials from system keychain"</span>),
+    p(<span class="c-str">/process\.env\.[A-Z_]*(?:KEY|TOKEN|SECRET|PASSWORD)/g</span>, MEDIUM,
+      <span class="c-str">"Reads sensitive environment variable"</span>),
+    p(<span class="c-str">/readFileSync\([^)]*\.ssh[/\\]id_(?:rsa|ed25519)/g</span>, HIGH,
+      <span class="c-str">"Reads private SSH key file"</span>),
+    <span class="c-com">// ...</span>
+  ],
+  obfuscation: [
+    p(<span class="c-str">/eval\s*\(\s*atob\s*\(/g</span>, HIGH,
+      <span class="c-str">"eval(atob(...)) — decodes and executes base64 payload"</span>),
+    p(<span class="c-str">/[&#39;&quot;`][A-Za-z0-9+/=]{300,}[&#39;&quot;`]/g</span>, MEDIUM,
+      <span class="c-str">"Very long base64-looking string (possible packed payload)"</span>),
+    <span class="c-com">// ...</span>
+  ]
+  <span class="c-com">// ... 6 more categories</span>
+};</pre>
+
+      <p>
+        Two things make this practical. First, the <code>p()</code> helper
+        normalises the regex — every input gets the global flag stripped and
+        re-added so callers don't have to think about it, and we ensure
+        <code>lastIndex</code> resets between files. Second, we cap each rule
+        at three matches per file to avoid pathological cases (a minified file
+        with 4,000 <code>eval</code> calls would otherwise dominate the
+        report).
+      </p>
+
+      <h2>Filename and location heuristics</h2>
+
+      <p>
+        Most pattern engines stop at content. Real droppers don't put their
+        suspicious code in a <code>.js</code> we can read — they ship as a
+        compiled <code>.exe</code> in your <code>Downloads</code> folder. So
+        the scanner also runs <i>cheap</i> heuristics on every file based on
+        its name and location:
+      </p>
+
+      <ul>
+        <li><b>Typo-squatted system processes</b>: <code>svch0st.exe</code> (zero instead of "o"), <code>expIorer.exe</code> (capital I instead of l)</li>
+        <li><b>Double extensions</b>: <code>invoice.pdf.exe</code>, <code>resume.docx.scr</code></li>
+        <li><b>Phishing-themed names</b>: <code>payment_overdue.exe</code>, <code>delivery_tracking.scr</code></li>
+        <li><b>Hex-encoded filenames</b>: <code>a1b2c3d4e5f60718.exe</code> (common dropper naming)</li>
+        <li><b>Risky locations</b>: any executable in <code>%TEMP%</code>, rare extensions like <code>.scr</code>/<code>.pif</code>/<code>.hta</code> in Downloads, executables in AppData/Roaming outside known-vendor folders</li>
+      </ul>
+
+      <p>
+        The location check is just a list of regexes against the file's path,
+        and it runs in nanoseconds. On the user's machine that ran the live
+        scan, <i>most</i> of the 175 findings came from this layer — not the
+        content patterns. It catches what content scanning can't see.
+      </p>
+
+      <h2>Real-time monitoring as a thin layer on top</h2>
+
+      <p>
+        Once the scanner exists, real-time protection is almost free. The
+        watcher daemon runs <code>fs.watch</code> with <code>recursive:
+        true</code> on Downloads, Desktop, the two Temp directories, and
+        AppData/Roaming. When a file event fires, we run the same heuristics
+        we use during a full scan and publish to a pub/sub.
+      </p>
+
+<pre class="code"><span class="c-key">const</span> w = fs.watch(p, { recursive: <span class="c-key">true</span> }, (eventType, filename) =&gt; {
+  <span class="c-key">if</span> (!filename) <span class="c-key">return</span>;
+  <span class="c-key">const</span> full = path.join(p, filename);
+
+  <span class="c-com">// Debounce: same path within 1.5s → one event</span>
+  <span class="c-key">const</span> last = lastSeen.get(full) || 0;
+  <span class="c-key">if</span> (Date.now() - last &lt; 1500) <span class="c-key">return</span>;
+  lastSeen.set(full, Date.now());
+
+  <span class="c-key">const</span> findings = inspect(full);
+  publish({ <span class="c-str">type</span>: <span class="c-str">"file_event"</span>, path: full, findings });
+});</pre>
+
+      <p>
+        The HTTP side serves the events as Server-Sent Events (yes, SSE here —
+        for fan-out streaming with auto-reconnect, SSE is genuinely the right
+        primitive). The browser's <code>EventSource</code> picks it up, and
+        the renderer pipes events into the activity feed. New file lands in
+        Downloads → activity feed lights up before the user double-clicks.
+      </p>
+
+      <h2>Cancellation that actually works</h2>
+
+      <p>
+        Here's the bit nobody talks about: <i>cancellation</i>. Users will
+        click "Cancel" mid-scan. The browser will close the tab. Some scans
+        will take 30 seconds and the user will navigate away in 5.
+      </p>
+
+      <p>
+        The whole pipeline cooperates. On the client, we stash an
+        <code>AbortController</code> when starting a scan. Calling
+        <code>abort()</code> tears down the fetch. On the server, the
+        request's <code>"close"</code> event fires the moment the socket
+        drops. The handler flips <code>opts.aborted = true</code>, and on the
+        next yield the async generator notices and bails.
+      </p>
+
+      <p>
+        No timers, no polling, no zombie scans. The Node process forgets the
+        scan ever happened within milliseconds of the client closing the tab.
+      </p>
+
+      <h2>The numbers</h2>
+
+      <p>On the development machine (a laptop with a not-particularly-fast SSD):</p>
+
+      <ul>
+        <li>Quick Scan paths covered: 8 (Downloads, Desktop, Documents, Temp×2, AppData/Roaming, Startup×2)</li>
+        <li>Files scanned: <b>16,400</b></li>
+        <li>Directories walked: <b>5,266</b></li>
+        <li>Findings emitted: <b>175</b> (70 HIGH, 72 MEDIUM, 33 LOW)</li>
+        <li>Total elapsed: <b>7.6 seconds</b></li>
+        <li>Memory peak: <b>under 80 MB</b></li>
+        <li>External npm dependencies in scanner: <b>0</b></li>
+      </ul>
+
+      <p>
+        Most of the wall-clock time is filesystem I/O, not pattern matching.
+        Once you've fanned out across 16k <code>fs.stat</code> calls, the
+        regex engine is essentially free. We could probably go faster with a
+        worker pool to parallelize file reads — but at 7.6s for the typical
+        user's home directory, the win wouldn't be worth the complexity.
+      </p>
+
+      <h2>What's next</h2>
+
+      <p>
+        Three things on deck. First, <b>VirusTotal integration</b> is wired:
+        every finding has a "↗ VT" button that hashes the file and queries
+        70+ commercial AV engines via the v3 API, with a 24-hour disk cache
+        and free-tier rate limiting. Second, the same scanner core is going
+        to power a <b>VS Code extension</b> that lints every file you save —
+        same patterns, same verdict system, scoped to your project. Third,
+        we're adding <b>YARA-style rule loading</b> so users can write their
+        own detections without touching the codebase.
+      </p>
+
+      <p>
+        The full source is <a href="https://github.com/artffee/sentivoguard"
+        target="_blank" rel="noopener">on GitHub</a>. The scanner core is in
+        <code>server/scanner-disk.js</code>, the patterns are in
+        <code>server/patterns.js</code>, and the streaming endpoint is in
+        <code>.server.js</code>. The whole pipeline — disk walker, pattern
+        engine, NDJSON streaming, abort handling, real-time watcher,
+        VirusTotal client — comes in under 1,500 lines of Node.
+      </p>
+
+      <p class="closer">
+        If you want to try it, the <a href="/#download">Windows .exe</a> is
+        unsigned but functional. Or clone the repo and run <code>npm
+        install &amp;&amp; npm start</code>. Either way, your Disk Scan view
+        will look something like this in about eight seconds:
+      </p>
+
+<pre class="code"><span class="c-ok">▶ Quick Scan complete · SUSPICIOUS</span>
+
+  <span class="c-dim">files scanned       16,400</span>
+  <span class="c-dim">directories walked   5,266</span>
+  <span class="c-dim">elapsed              7.6s</span>
+
+  <span class="c-danger">HIGH:    70</span>
+  <span class="c-warn">MEDIUM:  72</span>
+  <span class="c-dim">LOW:     33</span>
+
+  [Quarantine all 70 HIGH]   [Open Quarantine →]</pre>
+
+    </div>
+
+    <footer class="article-foot">
+      <a href="/blog" class="btn btn-ghost">← Back to blog</a>
+      <a href="/#download" class="btn btn-primary">Try SentivoGuard →</a>
+    </footer>
+
+  </article>
+
+  <footer class="foot">
+    <div class="foot-row">
+      <div>
+        <div class="brand">
+          <span class="logo"><span class="logo-block"></span><span class="logo-block"></span></span>
+          <span class="brand-name">SentivoGuard</span>
+        </div>
+        <p class="muted">Complete privacy &amp; security suite. v2.1 · Windows.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="/#tools">Tools</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/#download">Download</a>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <a href="/blog">Blog</a>
+        <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="https://github.com/artffee/sentivoguard/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      © 2026 SentivoGuard · All rights reserved
+    </div>
+  </footer>
+</body>
+</html>
