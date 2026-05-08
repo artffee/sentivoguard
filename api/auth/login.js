@@ -1,13 +1,16 @@
 // POST /api/auth/login
 // Body: { email, password }
 //
-// In stateless mode, the user record IS the sg_session cookie. Login verifies
-// the supplied password against the salt + hash already in the cookie. Without
-// a cookie (= different device or cleared cookies), there's no record to verify
-// against — the response asks the user to sign up on this device.
+// Cross-device mode (Redis configured): looks up user by email, verifies
+//   password, sets a fresh sg_session cookie. Works from any browser.
+//
+// Per-device fallback (no Redis): the user record must already be in the
+//   sg_session cookie on this browser (set during signup on this device).
+//   If the cookie is missing or carries a different email, return a clear
+//   "no account" error and prompt for signup.
 
 const {
-  readSession, authenticate, createSession, SESSION_LIFETIME
+  login, readSession, createSession, SESSION_LIFETIME, storeConfigured
 } = require("../../lib/users");
 const { readCookie, setCookie } = require("../../lib/cookies");
 
@@ -29,37 +32,39 @@ module.exports = async function handler(req, res) {
     return json(res, 400, { ok: false, error: "missing_credentials" });
   }
 
+  // Build a cookie fallback record (used in non-Redis mode)
   const cookieToken = readCookie(req, "sg_session");
-  if (!cookieToken) {
-    return json(res, 401, {
-      ok:    false,
-      error: "no_account_on_this_device",
-      hint:  "This browser doesn't have an account yet. Sign up first. " +
-             "Cross-device login requires a Redis store — see the README."
-    });
-  }
+  const cookieUser  = cookieToken ? readSession(cookieToken) : null;
 
-  const user = readSession(cookieToken);
+  const user = await login(email, password, cookieUser);
+
   if (!user) {
-    return json(res, 401, { ok: false, error: "invalid_session" });
-  }
-
-  if (user.email.toLowerCase() !== email) {
-    return json(res, 401, {
-      ok:    false,
-      error: "wrong_email_for_this_device",
-      hint:  "A different account exists on this device. Sign out first to register a new one."
-    });
-  }
-
-  if (!authenticate(user, password)) {
+    // Did the user exist at all? Differentiate "wrong password" from "no account"
+    if (storeConfigured()) {
+      // Redis-mode: the lookup already happened. login() returns null for both
+      // unknown email AND wrong password. Don't disclose which (timing safer).
+      return json(res, 401, { ok: false, error: "invalid_credentials",
+        hint: "Check your email and password." });
+    }
+    // Cookie-mode: be explicit so the user knows to sign up
+    if (!cookieUser) {
+      return json(res, 401, {
+        ok:    false,
+        error: "no_account_on_this_device",
+        hint:  "This browser has no account yet. Sign up first."
+      });
+    }
+    if (cookieUser.email.toLowerCase() !== email) {
+      return json(res, 401, {
+        ok:    false,
+        error: "wrong_email_for_this_device",
+        hint:  "A different account exists on this device. Sign out first."
+      });
+    }
     return json(res, 401, { ok: false, error: "wrong_password" });
   }
 
-  // Refresh the session cookie (extend expiry, keep license attachment).
-  const refreshed = createSession(user);
-  setCookie(res, "sg_session", refreshed, SESSION_LIFETIME);
-
+  setCookie(res, "sg_session", createSession(user), SESSION_LIFETIME);
   return json(res, 200, {
     ok:      true,
     email:   user.email,

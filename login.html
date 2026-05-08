@@ -92,7 +92,7 @@
     <div class="auth-card">
       <span class="eyebrow">Welcome back</span>
       <h1>Sign in to SentivoGuard</h1>
-      <p class="lede">Per-device accounts — sign in with the email + password you used on this browser.</p>
+      <p class="lede" id="login-lede">Sign in with your email + password.</p>
 
       <form id="login-form" novalidate>
         <div class="form-row">
@@ -131,12 +131,22 @@
   </main>
 
   <script>
-    // Already signed in? Skip to /members.
+    // Already signed in? Skip to /members. Also read crossDeviceLogin
+    // capability so we can tell the user whether they can log in from any
+    // device or only the one they signed up on.
     (async () => {
-      try {
-        const r = await fetch("/api/auth/me").then(r => r.json());
-        if (r.ok && r.authenticated) location.href = "/members";
-      } catch {}
+      let r = {};
+      try { r = await fetch("/api/auth/me").then(r => r.json()); } catch {}
+      if (r.ok && r.authenticated) { location.href = "/members"; return; }
+
+      const lede = document.getElementById("login-lede");
+      if (r.crossDeviceLogin) {
+        lede.innerHTML =
+          "Sign in from any device with your email + password. <b>Cross-device login enabled.</b>";
+      } else {
+        lede.textContent =
+          "Per-device accounts — sign in with the email + password you used on this browser.";
+      }
     })();
 
     document.getElementById("login-form").addEventListener("submit", async (e) => {

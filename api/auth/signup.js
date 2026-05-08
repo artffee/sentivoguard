@@ -1,14 +1,16 @@
 // POST /api/auth/signup
 // Body: { email, password }
-// On success: creates a user, auto-issues a free license, sets sg_session cookie,
-// returns { ok, email }.
+//
+// Creates a user record, auto-issues a free license, sets sg_session cookie,
+// and (if KV/Upstash is configured) persists the user to the central store
+// for cross-device login.
 
 const {
-  signupUser, attachLicense, createSession,
+  signup, attachLicense, createSession,
   validateEmail, validatePassword, SESSION_LIFETIME
 } = require("../../lib/users");
-const { setCookie } = require("../../lib/cookies");
-const { issue }     = require("../../server/license");
+const { setCookie }          = require("../../lib/cookies");
+const { issue }              = require("../../server/license");
 const { send, welcomeEmail } = require("../../lib/email");
 
 module.exports = async function handler(req, res) {
@@ -38,35 +40,38 @@ module.exports = async function handler(req, res) {
 
   let user;
   try {
-    user = signupUser(email, password);
+    user = await signup(email, password);
   } catch (e) {
+    if (e.message === "user_exists") {
+      return json(res, 409, {
+        ok: false,
+        error: "email_already_registered",
+        hint:  "Sign in instead."
+      });
+    }
     return json(res, 400, { ok: false, error: e.message });
   }
 
-  // Auto-issue a Free-tier license so the new account can immediately
-  // download. Paid plans replace this license after Stripe checkout.
+  // Auto-issue a Free-tier license. Paid plans replace this after checkout.
   let licenseToken = null;
   try {
-    licenseToken = issue({ email, plan: "free", days: 365 });
-    user = attachLicense(user, licenseToken);
+    licenseToken = issue({ email: user.email, plan: "free", days: 365 });
+    user = await attachLicense(user, licenseToken);
   } catch {
-    // If license minting fails (e.g., missing secret in dev), continue —
-    // they can still sign up but won't have a license attached yet.
+    /* keep user without a license rather than failing signup */
   }
 
-  const sessionToken = createSession(user);
-  setCookie(res, "sg_session", sessionToken, SESSION_LIFETIME);
+  setCookie(res, "sg_session", createSession(user), SESSION_LIFETIME);
 
-  // Fire-and-forget welcome email — never block the signup response on it.
-  // Errors are logged inside lib/email.js; we just don't await.
-  send(Object.assign({ to: email }, welcomeEmail(email)))
+  // Fire-and-forget welcome email
+  send(Object.assign({ to: user.email }, welcomeEmail(user.email)))
     .catch((e) => console.error("[signup] welcome email failed:", e?.message));
 
   return json(res, 200, {
-    ok:        true,
-    email,
-    license:   !!licenseToken,
-    plan:      "free"
+    ok:      true,
+    email:   user.email,
+    license: !!licenseToken,
+    plan:    "free"
   });
 };
 

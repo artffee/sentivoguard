@@ -19,7 +19,7 @@
 
 const { issue }      = require("../server/license");
 const {
-  readSession, attachLicense, createSession, SESSION_LIFETIME
+  readSession, attachLicense, createSession, findUserInStore, SESSION_LIFETIME
 } = require("../lib/users");
 const { readCookie, setCookie } = require("../lib/cookies");
 const { send, licenseEmail }    = require("../lib/email");
@@ -70,10 +70,15 @@ module.exports = async function handler(req, res) {
       return json(res, 500, { ok: false, error: "issue_failed", detail: e.message });
     }
 
-    // If logged in, attach the new license to the session and refresh the cookie.
+    // If logged in, attach the new license to the session AND persist it to
+    // the user store (when configured), so the license is visible from any
+    // device the user logs in from.
     let attached = false;
     if (user && user.email.toLowerCase() === email.toLowerCase()) {
-      const updated = attachLicense(user, token);
+      // Re-fetch the freshest user from the store so we don't overwrite
+      // changes made on another device.
+      const fresh = (await findUserInStore(user.email)) || user;
+      const updated = await attachLicense(fresh, token);
       setCookie(res, "sg_session", createSession(updated), SESSION_LIFETIME);
       attached = true;
     }

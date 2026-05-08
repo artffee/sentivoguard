@@ -71,6 +71,39 @@ Plans: `free`, `standard`, `plus`, `ultimate` — see
 5. Sign the .exe with an EV code-signing cert
 6. Upload to your CDN / Stripe customer portal for download
 
+## Cross-device login (optional)
+
+The members area supports two modes for user authentication:
+
+- **Per-device** (default, no setup) — the user record is signed into the
+  `sg_session` cookie. Works without any infrastructure but means signing
+  in from a different browser requires fresh signup.
+- **Cross-device** (Upstash Redis / Vercel KV) — user records persist at
+  `user:<email>` in a Redis store. Sign in from any device with email +
+  password. Auto-detects the env vars; gracefully no-ops to per-device mode
+  if not configured.
+
+### Enable cross-device login
+
+The fastest path is the Vercel Marketplace integration (one click):
+
+1. Vercel dashboard → your project → **Storage** tab → **Create Database**
+2. Pick **Upstash Redis** (free tier: 10k commands/day)
+3. Click **Connect** — env vars `KV_REST_API_URL` + `KV_REST_API_TOKEN`
+   auto-inject into the project
+4. Redeploy. The `crossDeviceLogin` capability flag flips to `true` and
+   `/login` from a fresh browser starts working.
+
+Manual setup (if you don't want the integration): sign up at
+[upstash.com](https://upstash.com), create a Redis database, and run:
+
+```sh
+vercel env add UPSTASH_REDIS_REST_URL    production
+vercel env add UPSTASH_REDIS_REST_TOKEN  production
+```
+
+Either env var pair works — see [lib/store.js](./lib/store.js).
+
 ## What's actually functional
 
 | Component                     | Status   | Notes |

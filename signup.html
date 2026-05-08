@@ -136,10 +136,8 @@
         Already have an account? <a href="/login">Sign in</a>
       </div>
 
-      <p class="note">
-        Per-device accounts: your account lives in this browser's secure cookie.
-        Logging in from a different device requires a fresh signup. (Cross-device
-        login arrives when we add server-side storage.)
+      <p class="note" id="device-note">
+        Loading…
       </p>
 
       <p class="note" style="text-align: center; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--bg-4);">
@@ -151,12 +149,22 @@
   </main>
 
   <script>
-    // Already signed in? Skip to /members.
+    // Already signed in? Skip to /members. Also read crossDeviceLogin
+    // capability and adjust the messaging.
     (async () => {
-      try {
-        const r = await fetch("/api/auth/me").then(r => r.json());
-        if (r.ok && r.authenticated) location.href = "/members";
-      } catch {}
+      let r = {};
+      try { r = await fetch("/api/auth/me").then(r => r.json()); } catch {}
+      if (r.ok && r.authenticated) { location.href = "/members"; return; }
+
+      const note = document.getElementById("device-note");
+      if (r.crossDeviceLogin) {
+        note.innerHTML =
+          "<b>Cross-device login enabled.</b> Sign in from any browser using your email + password.";
+      } else {
+        note.textContent =
+          "Per-device accounts: your account lives in this browser's secure cookie. " +
+          "Cross-device login activates once a Redis store is connected on the server.";
+      }
     })();
 
     document.getElementById("signup-form").addEventListener("submit", async (e) => {

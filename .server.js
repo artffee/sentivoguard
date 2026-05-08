@@ -91,16 +91,21 @@ async function api(req, res, pathname) {
 
   try {
     if (pathname === "/api/health" && req.method === "GET") {
+      // Report whether cross-device login (Upstash KV) is available — the
+      // marketing pages use this to show the right messaging.
+      let crossDevice = false;
+      try { crossDevice = require("./lib/store").configured(); } catch {}
       return json(res, 200, {
         ok:       true,
         platform: process.platform,
         node:     process.version,
         version:  "2.1.0",
         capabilities: {
-          connections: process.platform === "win32",
-          clean:       true,
-          scanNpm:     true,
-          scanFolder:  true
+          connections:      process.platform === "win32",
+          clean:            true,
+          scanNpm:          true,
+          scanFolder:       true,
+          crossDeviceLogin: crossDevice
         }
       });
     }
