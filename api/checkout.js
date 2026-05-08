@@ -22,6 +22,7 @@ const {
   readSession, attachLicense, createSession, SESSION_LIFETIME
 } = require("../lib/users");
 const { readCookie, setCookie } = require("../lib/cookies");
+const { send, licenseEmail }    = require("../lib/email");
 
 const PLANS = {
   standard: { days: 365 },
@@ -77,14 +78,28 @@ module.exports = async function handler(req, res) {
       attached = true;
     }
 
+    // Email the license — works in dev mode (mock log) and prod (real send).
+    let emailResult = { ok: false };
+    try { emailResult = await send(Object.assign({ to: email }, licenseEmail(email, plan, token))); }
+    catch (e) { emailResult = { ok: false, error: e.message }; }
+
     return json(res, 200, {
-      ok:       true,
-      devMode:  true,
-      attached,                 // session updated, no manual paste needed
-      token:    attached ? null : token,   // only echo the JWT if not attached
-      message:  attached
-        ? "Test license minted and attached to your session."
-        : "Test license minted (Stripe not configured). Paste the token at /members to activate."
+      ok:           true,
+      devMode:      true,
+      attached,
+      emailSent:    emailResult.ok && !emailResult.mocked,
+      emailMocked:  !!emailResult.mocked,
+      // Echo the token only if we couldn't deliver it any other way
+      // (no session attachment AND email failed/wasn't really sent).
+      token:        (attached || (emailResult.ok && !emailResult.mocked))
+                      ? null : token,
+      message:      attached
+        ? (emailResult.ok && !emailResult.mocked
+            ? "License minted, attached to your session, and emailed to " + email + "."
+            : "License minted and attached to your session. (Resend not configured — email skipped.)")
+        : (emailResult.ok && !emailResult.mocked
+            ? "License emailed to " + email + ". Paste it at /members to activate."
+            : "License minted (Stripe + Resend not configured). Paste the returned token at /members to activate.")
     });
   }
 

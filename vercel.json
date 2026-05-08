@@ -10,7 +10,9 @@
     { "source": "/members",                       "destination": "/members.html" },
     { "source": "/members/download",              "destination": "/members-download.html" },
     { "source": "/signup",                        "destination": "/signup.html" },
-    { "source": "/login",                         "destination": "/login.html" }
+    { "source": "/login",                         "destination": "/login.html" },
+    { "source": "/privacy",                       "destination": "/privacy.html" },
+    { "source": "/terms",                         "destination": "/terms.html" }
   ],
   "headers": [
     {

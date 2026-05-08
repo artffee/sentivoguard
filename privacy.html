@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy · SentivoGuard</title>
+  <meta name="description" content="What data SentivoGuard collects, what we don't, and the third parties involved." />
+  <link rel="stylesheet" href="/landing.css" />
+  <link rel="stylesheet" href="/blog.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <nav class="nav">
+    <a class="brand" href="/">
+      <span class="logo">
+        <span class="logo-block"></span><span class="logo-block"></span>
+      </span>
+      <span class="brand-name">SentivoGuard</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#tools">Tools</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/blog">Blog</a>
+      <a href="/login">Sign in</a>
+    </div>
+    <a class="btn btn-primary" href="/signup">Sign up</a>
+  </nav>
+
+  <article class="article">
+    <header class="article-head">
+      <div class="article-meta">
+        <span class="tag-cat">Legal</span>
+        <span>Effective 2026-05-08</span>
+      </div>
+      <h1>Privacy Policy</h1>
+      <p class="lede">
+        Plain-language summary first, formal language second. SentivoGuard is built around a
+        simple principle: scanning happens on your device, and the only data
+        that leaves it is what you explicitly send.
+      </p>
+    </header>
+
+    <div class="article-body">
+
+      <h2>The 30-second version</h2>
+      <ul>
+        <li>We collect: your <b>email</b> (when you sign up) and your <b>license JWT</b> (which contains your email + plan).</li>
+        <li>We don't collect: file contents from scans, browsing history, telemetry about how you use the app, or any device fingerprints.</li>
+        <li>Disk scans run <b>entirely on your machine</b>. Findings stay on your machine unless you click "↗ VT" (sends only the file's SHA-256 hash to VirusTotal).</li>
+        <li>Nova AI sends <b>only the conversation text you type</b> to Anthropic. Never file contents, never data from other tools.</li>
+        <li>Cookies are minimal: <code>sg_session</code> (your account) and <code>sg_license</code> (your license JWT). Both <code>HttpOnly</code> + <code>Secure</code>.</li>
+        <li>You can delete your account any time by clicking <b>Sign out</b> + clearing browser cookies. Per-device accounts mean nothing is stored on our servers.</li>
+      </ul>
+
+      <h2>What we collect</h2>
+
+      <h3>From the marketing site</h3>
+      <p>
+        Vercel, our hosting provider, logs basic HTTP request metadata (IP,
+        user-agent, timestamp, requested path). We don't run any analytics,
+        tracking pixels, or third-party scripts on the marketing pages.
+      </p>
+
+      <h3>When you sign up</h3>
+      <p>
+        We collect your email address and a hashed (scrypt) password. Both are
+        stored only in a signed JWT cookie set on your browser — there is no
+        central user database in the current build. Logging in from a
+        different browser requires a fresh signup.
+      </p>
+
+      <h3>When you buy a paid plan</h3>
+      <p>
+        Payments are processed by <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a>.
+        We never see your card details — Stripe sends us a webhook saying "this
+        email paid for the Plus tier", and we mint a license JWT for that email.
+        Stripe's privacy policy applies to their handling of your payment data.
+      </p>
+
+      <h3>Inside the desktop app</h3>
+      <p>
+        File scans, quarantine, the encrypted vault, and the real-time watcher
+        all run entirely on your computer. Findings never leave your machine
+        unless you opt in:
+      </p>
+      <ul>
+        <li>Clicking <b>↗ VT</b> on a finding sends the file's SHA-256 hash (no contents) to VirusTotal.</li>
+        <li>Sending a Nova AI message sends only your typed text to Anthropic's Claude API.</li>
+        <li>Activating Nova requires pasting your own Anthropic API key — we never see it.</li>
+      </ul>
+
+      <h2>What we don't collect</h2>
+      <ul>
+        <li>File contents from disk scans</li>
+        <li>The list of files in your Downloads / Temp folders</li>
+        <li>Quarantined file metadata</li>
+        <li>Vault entries (everything is AES-256-GCM encrypted client-side; we couldn't read it if we wanted to)</li>
+        <li>Application usage telemetry</li>
+        <li>Browsing history, network connections, device IDs</li>
+      </ul>
+
+      <h2>Third parties</h2>
+      <table style="width: 100%; border-collapse: collapse; margin: 14px 0 22px; font-size: 14px;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--bg-4);">
+            <th style="text-align: left; padding: 8px 0; color: var(--fg-2); font-weight: 600;">Service</th>
+            <th style="text-align: left; padding: 8px 0; color: var(--fg-2); font-weight: 600;">What they receive</th>
+            <th style="text-align: left; padding: 8px 0; color: var(--fg-2); font-weight: 600;">When</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--bg-4);">
+            <td style="padding: 10px 0;">Vercel</td>
+            <td>HTTP request metadata (IP, UA, path)</td>
+            <td>Every page load</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--bg-4);">
+            <td style="padding: 10px 0;">Stripe</td>
+            <td>Email + payment card details</td>
+            <td>Only at checkout</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--bg-4);">
+            <td style="padding: 10px 0;">Resend</td>
+            <td>Email address + email content</td>
+            <td>Welcome / license / receipt emails</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--bg-4);">
+            <td style="padding: 10px 0;">Anthropic</td>
+            <td>Conversation text you type into Nova</td>
+            <td>Each Nova message (Plus only)</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0;">VirusTotal</td>
+            <td>SHA-256 file hashes (never contents)</td>
+            <td>Only when you click "↗ VT" on a finding</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Cookies</h2>
+      <p>We set two cookies, both <code>HttpOnly</code> + <code>Secure</code> + <code>SameSite=Lax</code>:</p>
+      <ul>
+        <li><code>sg_session</code> — your authenticated session. Contains email, scrypt password hash, and (optionally) your license JWT. 30-day expiry.</li>
+        <li><code>sg_license</code> — alternative authentication via license key alone, without an account. 30-day expiry.</li>
+      </ul>
+      <p>No tracking cookies, no advertising cookies, no analytics cookies.</p>
+
+      <h2>Retention</h2>
+      <ul>
+        <li><b>Session cookies</b> — kept until you sign out, manually clear cookies, or 30 days pass without renewal.</li>
+        <li><b>License JWTs</b> — valid until their <code>exp</code> claim (typically 1 year from issue).</li>
+        <li><b>Stripe records</b> — retained per Stripe's policy, typically 7 years for tax purposes.</li>
+        <li><b>Email logs</b> — retained by Resend for ~30 days for delivery debugging.</li>
+      </ul>
+
+      <h2>Your rights</h2>
+      <ul>
+        <li><b>Delete your account</b> — sign out and clear your browser cookies. There's no central user record to delete in the current build.</li>
+        <li><b>Get a copy of your data</b> — your <code>sg_session</code> cookie IS your data. Decode it at <a href="https://jwt.io" target="_blank" rel="noopener">jwt.io</a> to inspect.</li>
+        <li><b>Cancel a paid plan</b> — Stripe customer portal handles this. Email us if you need help.</li>
+        <li><b>Erase a Stripe record</b> — email us with your customer ID and we'll request deletion within Stripe's retention rules.</li>
+      </ul>
+
+      <h2>Children</h2>
+      <p>
+        SentivoGuard isn't directed at children under 13. We don't knowingly
+        collect data from anyone under 13. If you believe a minor has signed
+        up, contact us and we'll remove the account.
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        We'll update the "Effective" date at the top when this policy changes.
+        Substantive changes will be announced via email to active members.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions, deletion requests, or breach notifications:
+        <a href="mailto:hello@sentivoguard.com">hello@sentivoguard.com</a>
+      </p>
+
+      <p class="closer">
+        This policy is intentionally short and concrete. If something in the
+        product makes the privacy claims here inaccurate, please email us —
+        we'll fix the product, then update this policy.
+      </p>
+
+    </div>
+
+    <footer class="article-foot">
+      <a href="/" class="btn btn-ghost">← Home</a>
+      <a href="/terms" class="btn btn-ghost">Terms of Service →</a>
+    </footer>
+
+  </article>
+
+  <footer class="foot">
+    <div class="foot-row">
+      <div>
+        <div class="brand">
+          <span class="logo"><span class="logo-block"></span><span class="logo-block"></span></span>
+          <span class="brand-name">SentivoGuard</span>
+        </div>
+        <p class="muted">Complete privacy &amp; security suite. v2.1 · Windows.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="/#tools">Tools</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/members">Members</a>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <a href="/blog">Blog</a>
+        <a href="/login">Sign in</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="/privacy" style="color: var(--accent-3);">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      © 2026 SentivoGuard · All rights reserved
+    </div>
+  </footer>
+</body>
+</html>

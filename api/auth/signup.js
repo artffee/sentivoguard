@@ -8,7 +8,8 @@ const {
   validateEmail, validatePassword, SESSION_LIFETIME
 } = require("../../lib/users");
 const { setCookie } = require("../../lib/cookies");
-const { issue } = require("../../server/license");
+const { issue }     = require("../../server/license");
+const { send, welcomeEmail } = require("../../lib/email");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -55,6 +56,11 @@ module.exports = async function handler(req, res) {
 
   const sessionToken = createSession(user);
   setCookie(res, "sg_session", sessionToken, SESSION_LIFETIME);
+
+  // Fire-and-forget welcome email — never block the signup response on it.
+  // Errors are logged inside lib/email.js; we just don't await.
+  send(Object.assign({ to: email }, welcomeEmail(email)))
+    .catch((e) => console.error("[signup] welcome email failed:", e?.message));
 
   return json(res, 200, {
     ok:        true,
