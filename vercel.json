@@ -6,7 +6,9 @@
     { "source": "/",                              "destination": "/landing.html" },
     { "source": "/blog",                          "destination": "/blog.html"    },
     { "source": "/blog/real-time-disk-scanner",   "destination": "/blog-real-time-disk-scanner.html" },
-    { "source": "/blog/launching-sentivoguard-21","destination": "/blog-launching-sentivoguard-21.html" }
+    { "source": "/blog/launching-sentivoguard-21","destination": "/blog-launching-sentivoguard-21.html" },
+    { "source": "/members",                       "destination": "/members.html" },
+    { "source": "/members/download",              "destination": "/members-download.html" }
   ],
   "headers": [
     {
@@ -22,6 +24,12 @@
       "source": "/(.*\\.(?:js|css|png|jpg|svg|woff2))",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
       ]
     }
   ]

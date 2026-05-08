@@ -28,7 +28,7 @@
       <a href="/blog">Blog</a>
       <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
     </div>
-    <a class="btn btn-primary" href="#download">Download</a>
+    <a class="btn btn-primary" href="/members">Sign in / Download</a>
   </nav>
 
   <!-- ── Hero ────────────────────────────────────────── -->
@@ -46,8 +46,8 @@
       </p>
 
       <div class="cta-row">
-        <a class="btn btn-primary btn-lg" href="#download">
-          <span>↓</span> Download for Windows
+        <a class="btn btn-primary btn-lg" href="/members">
+          <span>↓</span> Get the Windows installer
         </a>
         <a class="btn btn-ghost btn-lg" href="#pricing">See pricing</a>
       </div>
@@ -159,7 +159,7 @@
           <li>Manual scans</li>
           <li>1 device</li>
         </ul>
-        <a class="btn btn-ghost" href="#download">Download free</a>
+        <a class="btn btn-ghost" href="/members">Download free</a>
       </article>
 
       <article class="tier">
@@ -171,7 +171,7 @@
           <li>SentivoDefend</li>
           <li>3 devices · email support</li>
         </ul>
-        <a class="btn btn-ghost" href="#buy">Get Standard</a>
+        <a class="btn btn-ghost" href="/members#buy-card">Get Standard</a>
       </article>
 
       <article class="tier featured">
@@ -185,7 +185,7 @@
           <li>Shield VPN (all servers)</li>
           <li>5 devices · priority support</li>
         </ul>
-        <a class="btn btn-primary" href="#buy">Get Plus</a>
+        <a class="btn btn-primary" href="/members#buy-card">Get Plus</a>
       </article>
 
       <article class="tier">
@@ -201,44 +201,31 @@
           <li>Nova AI (5M tokens/mo)</li>
           <li>Unlimited devices</li>
         </ul>
-        <a class="btn btn-ghost" href="#buy">Get Ultimate</a>
+        <a class="btn btn-ghost" href="/members#buy-card">Get Ultimate</a>
       </article>
     </div>
   </section>
 
-  <!-- ── Download ──────────────────────────────────── -->
+  <!-- ── Download / Members CTA ───────────────────── -->
   <section class="download" id="download">
     <div class="download-card">
       <div>
-        <span class="section-eyebrow">Available now</span>
+        <span class="section-eyebrow">Members-only download</span>
         <h2>SentivoGuard for Windows</h2>
-        <p>NSIS installer · ~76 MB · runs on Windows 10/11 · auto-starts in tray · v2.1.0</p>
+        <p>NSIS installer · ~76 MB · v2.1.0 · members-only download. Sign in with your license key (Free tier keys mintable from the repo).</p>
       </div>
       <div class="download-actions">
-        <a class="btn btn-primary btn-lg"
-           href="https://github.com/artffee/sentivoguard/releases/latest/download/SentivoGuard-Setup-2.1.0.exe">
-          <span>↓</span> Download .exe
+        <a class="btn btn-primary btn-lg" href="/members">
+          <span>→</span> Sign in to download
         </a>
-        <a class="btn btn-ghost"
-           href="https://github.com/artffee/sentivoguard"
-           target="_blank" rel="noopener">View on GitHub</a>
+        <a class="btn btn-ghost" href="/members#buy-card">Buy a license</a>
       </div>
     </div>
     <p class="download-fineprint">
-      Free tier doesn't require a license key. Plus / Ultimate keys are emailed
-      after Stripe checkout — paste them into <span class="mono">Settings → License key</span>.
+      The installer URL is gated by license verification — only active members can download.
+      Pricing: Free / $29 Standard / $49 Plus / $99 Ultimate. Free tier doesn't require payment but does require activation.
       <br />macOS / Linux: build from source — <span class="mono">npm install &amp;&amp; npm run build:mac</span>
     </p>
-  </section>
-
-  <!-- ── Buy (placeholder for Stripe) ──────────────── -->
-  <section class="buy" id="buy">
-    <h2>Get a license key</h2>
-    <p class="muted">Stripe checkout integration is wired but inactive on this preview. To test the activation flow, mint a key locally:</p>
-    <pre class="codeblock"><span class="dim"># on a machine with the SentivoGuard repo cloned</span>
-SG_LICENSE_SECRET=your-secret \
-  node tools/issue-license.js you@email.com plus 365</pre>
-    <p class="muted">Paste the resulting JWT into <span class="mono">Settings → License key</span> in the app to unlock Plus features.</p>
   </section>
 
   <!-- ── Footer ────────────────────────────────────── -->
@@ -255,7 +242,7 @@ SG_LICENSE_SECRET=your-secret \
         <h4>Product</h4>
         <a href="#tools">Tools</a>
         <a href="#pricing">Pricing</a>
-        <a href="#download">Download</a>
+        <a href="/members">Download</a>
       </div>
       <div>
         <h4>Resources</h4>

@@ -1,4 +1,5 @@
-# Vercel only needs the /web landing page. Exclude everything else.
+# Vercel ships the marketing pages + the /api functions.
+# Everything else is desktop-app source and shouldn't be uploaded.
 
 node_modules/
 dist/
@@ -9,14 +10,18 @@ out/
 .gstack/
 .claude/
 
-# Desktop app source (the landing page is self-contained in /web)
+# Desktop app source — exclude EVERYTHING in server/ except license.js
+# (the API functions need to verify JWTs)
+server/*
+!server/license.js
+
+# Other desktop-only directories
 js/
-server/
 styles/
 tools/
 assets/
 
-# Top-level files not needed for the landing page
+# Top-level files used only by the desktop app
 .server.js
 main.js
 preload.js

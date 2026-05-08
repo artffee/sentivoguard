@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download · SentivoGuard Members</title>
+  <link rel="stylesheet" href="/landing.css" />
+  <style>
+    .gate-shell {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 80px 32px 96px;
+      position: relative; z-index: 1;
+    }
+    .welcome {
+      background:
+        linear-gradient(135deg, rgba(64,145,108,0.18), transparent 60%),
+        var(--bg-2);
+      border: 1px solid rgba(64,145,108,0.35);
+      border-radius: var(--radius);
+      padding: 36px 36px 32px;
+      margin-bottom: 24px;
+    }
+    .welcome h1 {
+      font-size: 30px;
+      letter-spacing: -0.02em;
+      margin: 6px 0 8px;
+    }
+    .welcome p {
+      color: var(--fg-1);
+      margin: 0;
+      font-size: 15px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 26px 0 4px;
+    }
+    .meta-cell {
+      background: var(--bg-3);
+      border: 1px solid var(--bg-4);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .meta-cell .label {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--fg-2);
+      margin-bottom: 6px;
+    }
+    .meta-cell .value {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--fg-0);
+    }
+
+    .download-card {
+      background: var(--bg-2);
+      border: 1px solid var(--bg-4);
+      border-radius: var(--radius);
+      padding: 32px;
+    }
+    .download-card h2 {
+      font-size: 20px;
+      margin: 0 0 6px;
+    }
+    .download-card p {
+      color: var(--fg-2);
+      margin: 0 0 18px;
+      font-size: 14px;
+    }
+    .download-row {
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .file-info {
+      flex: 1;
+      min-width: 220px;
+      font-size: 13px;
+      color: var(--fg-2);
+    }
+    .file-info b { color: var(--fg-0); font-weight: 600; }
+
+    .footer-actions {
+      margin-top: 22px;
+      padding-top: 22px;
+      border-top: 1px solid var(--bg-4);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 13px;
+      color: var(--fg-2);
+    }
+
+    .next-steps {
+      margin-top: 24px;
+      background: var(--bg-2);
+      border: 1px solid var(--bg-4);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+    }
+    .next-steps h3 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--fg-1);
+      margin: 0 0 12px;
+    }
+    .next-steps ol {
+      margin: 0; padding-left: 22px;
+      color: var(--fg-1);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .next-steps code {
+      font-family: var(--font-mono);
+      background: var(--bg-3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--accent-3);
+      font-size: 12.5px;
+    }
+
+    /* Loading + error states */
+    .state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--fg-2);
+    }
+    .state h2 {
+      color: var(--fg-0);
+      font-size: 22px;
+      margin: 12px 0 8px;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid var(--bg-4);
+      border-top-color: var(--accent-3);
+      border-radius: 50%;
+      margin: 0 auto;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <nav class="nav">
+    <a class="brand" href="/">
+      <span class="logo">
+        <span class="logo-block"></span><span class="logo-block"></span>
+      </span>
+      <span class="brand-name">SentivoGuard</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#tools">Tools</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/blog">Blog</a>
+      <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <a class="btn btn-ghost" href="#" id="logout-btn">Sign out</a>
+  </nav>
+
+  <main class="gate-shell">
+    <!-- Loading state (shown while we check the session) -->
+    <div id="loading" class="state">
+      <div class="spinner"></div>
+      <h2>Verifying your session…</h2>
+    </div>
+
+    <!-- Member content (shown if authenticated) -->
+    <div id="member-content" style="display: none;">
+
+      <div class="welcome">
+        <span class="eyebrow">✓ Active member</span>
+        <h1>Welcome back, <span id="member-email" class="grad">friend</span></h1>
+        <p>Your <span id="member-plan">Plus</span> license is active. Download the Windows installer below.</p>
+
+        <div class="meta-grid">
+          <div class="meta-cell">
+            <div class="label">Plan</div>
+            <div class="value" id="meta-plan">—</div>
+          </div>
+          <div class="meta-cell">
+            <div class="label">Devices</div>
+            <div class="value" id="meta-devices">—</div>
+          </div>
+          <div class="meta-cell">
+            <div class="label">Expires</div>
+            <div class="value" id="meta-expires">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="download-card">
+        <h2>SentivoGuard for Windows</h2>
+        <p>v2.1.0 · NSIS installer · Windows 10/11 · x64</p>
+
+        <div class="download-row">
+          <div class="file-info">
+            <b>SentivoGuard-Setup-2.1.0.exe</b><br />
+            76 MB · unsigned (SmartScreen warning normal — click "More info" → "Run anyway")
+          </div>
+          <a class="btn btn-primary btn-lg" href="/api/download">
+            <span>↓</span> Download installer
+          </a>
+        </div>
+
+        <div class="footer-actions">
+          <span>Need help installing?</span>
+          <a href="https://github.com/artffee/sentivoguard#install" target="_blank" rel="noopener" style="color: var(--accent-3);">
+            Read the install guide →
+          </a>
+        </div>
+      </div>
+
+      <div class="next-steps">
+        <h3>After install</h3>
+        <ol>
+          <li>Run <code>SentivoGuard-Setup-2.1.0.exe</code> — accept the SmartScreen warning</li>
+          <li>Open SentivoGuard → <b>Settings</b> → <b>License key</b></li>
+          <li>Paste the same JWT you used to sign in here → click <b>Activate</b></li>
+          <li>The app unlocks all features for your plan. Run a Quick Disk Scan to see real-time protection in action.</li>
+        </ol>
+      </div>
+
+    </div>
+
+    <!-- Locked state (shown if NOT authenticated; should never appear because the
+         server-side cookie check redirects, but kept as defense-in-depth) -->
+    <div id="locked" class="state" style="display: none;">
+      <h2>Members area is locked</h2>
+      <p>You need an active license to access this page.</p>
+      <a class="btn btn-primary" href="/members" style="margin-top: 18px;">Go to sign in</a>
+    </div>
+
+  </main>
+
+  <footer class="foot">
+    <div class="foot-row">
+      <div>
+        <div class="brand">
+          <span class="logo"><span class="logo-block"></span><span class="logo-block"></span></span>
+          <span class="brand-name">SentivoGuard</span>
+        </div>
+        <p class="muted">Complete privacy &amp; security suite. v2.1 · Windows.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="/#tools">Tools</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/members">Members</a>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <a href="/blog">Blog</a>
+        <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="https://github.com/artffee/sentivoguard/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      © 2026 SentivoGuard · All rights reserved
+    </div>
+  </footer>
+
+  <script>
+    (async function () {
+      let info;
+      try {
+        info = await fetch("/api/members").then(r => r.json());
+      } catch {
+        info = { ok: false };
+      }
+
+      if (!info.ok || !info.member) {
+        // Should be very rare since /api/download redirects to /members on bad cookie,
+        // but if the user landed here directly with no cookie, send them home.
+        location.href = "/members?error=login_required";
+        return;
+      }
+
+      // Render member content
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("member-content").style.display = "block";
+
+      const cap = (s) => s ? s[0].toUpperCase() + s.slice(1) : s;
+      document.getElementById("member-email").textContent = info.email || "member";
+      document.getElementById("member-plan").textContent  = cap(info.plan);
+      document.getElementById("meta-plan").textContent    = cap(info.plan);
+      document.getElementById("meta-devices").textContent = info.devices === 999 ? "Unlimited" : String(info.devices);
+      const expiresAt = new Date(info.expires * 1000);
+      const days = Math.max(0, Math.floor((expiresAt - Date.now()) / 86400000));
+      document.getElementById("meta-expires").textContent =
+        expiresAt.toLocaleDateString() + " (" + days + " days)";
+    })();
+
+    document.getElementById("logout-btn").addEventListener("click", async (e) => {
+      e.preventDefault();
+      await fetch("/api/members?action=logout").catch(() => {});
+      location.href = "/";
+    });
+  </script>
+</body>
+</html>

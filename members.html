@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Members · SentivoGuard</title>
+  <meta name="description" content="Activate your SentivoGuard license to access the Windows installer download." />
+  <link rel="stylesheet" href="/landing.css" />
+  <style>
+    .members-shell {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 80px 32px 96px;
+      position: relative; z-index: 1;
+    }
+    .members-card {
+      background: var(--bg-2);
+      border: 1px solid var(--bg-4);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+    }
+    .members-card.featured {
+      border-color: rgba(64,145,108,0.35);
+      background:
+        linear-gradient(135deg, rgba(64,145,108,0.10), transparent 60%),
+        var(--bg-2);
+    }
+    .members-card h1 {
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      margin: 6px 0 8px;
+    }
+    .members-card p.lede {
+      color: var(--fg-1);
+      font-size: 15px;
+      margin: 0 0 22px;
+    }
+    label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--fg-2);
+      margin-bottom: 6px;
+    }
+    .input,
+    textarea.input {
+      width: 100%;
+      background: var(--bg-3);
+      border: 1px solid var(--bg-4);
+      color: var(--fg-0);
+      padding: 11px 14px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      transition: border-color 0.15s;
+    }
+    textarea.input { resize: vertical; min-height: 86px; }
+    .input:focus { outline: none; border-color: var(--accent-2); }
+
+    .form-row + .form-row { margin-top: 14px; }
+
+    .alert {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .alert.err { background: rgba(230,57,70,0.10); border: 1px solid rgba(230,57,70,0.3); color: var(--danger); }
+    .alert.ok  { background: rgba(82,183,136,0.10); border: 1px solid rgba(82,183,136,0.3); color: var(--ok); }
+    .alert.hidden { display: none; }
+
+    .divider {
+      display: flex; align-items: center;
+      margin: 28px 0;
+      color: var(--fg-3);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .divider::before, .divider::after {
+      content: ""; flex: 1;
+      border-top: 1px solid var(--bg-4);
+    }
+    .divider::before { margin-right: 14px; }
+    .divider::after  { margin-left: 14px; }
+
+    .pricing-mini {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .pricing-mini button {
+      background: var(--bg-3);
+      border: 1px solid var(--bg-4);
+      border-radius: 10px;
+      padding: 14px 12px;
+      color: var(--fg-0);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.15s, transform 0.1s, background 0.15s;
+      text-align: center;
+    }
+    .pricing-mini button:hover {
+      border-color: var(--accent-2);
+      transform: translateY(-1px);
+    }
+    .pricing-mini button.featured {
+      border-color: var(--accent-2);
+      background: linear-gradient(180deg, rgba(64,145,108,0.10), var(--bg-3) 30%);
+    }
+    .pricing-mini b {
+      display: block;
+      font-size: 13.5px;
+    }
+    .pricing-mini .price {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--accent-3);
+      margin-top: 4px;
+    }
+    .pricing-mini .small {
+      display: block;
+      font-size: 10.5px;
+      color: var(--fg-2);
+      margin-top: 4px;
+    }
+
+    .members-card .footer-row {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--bg-4);
+      font-size: 12.5px;
+      color: var(--fg-2);
+    }
+    .members-card .footer-row a { color: var(--accent-3); }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <nav class="nav">
+    <a class="brand" href="/">
+      <span class="logo">
+        <span class="logo-block"></span><span class="logo-block"></span>
+      </span>
+      <span class="brand-name">SentivoGuard</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#tools">Tools</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/blog">Blog</a>
+      <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <a class="btn btn-primary" href="/members" style="background: var(--bg-3); border-color: var(--accent-2);">Members</a>
+  </nav>
+
+  <main class="members-shell">
+
+    <!-- Login card -->
+    <div class="members-card featured" id="login-card">
+      <span class="eyebrow">Members area · activate to download</span>
+      <h1>Sign in with your license key</h1>
+      <p class="lede">
+        Paste the JWT key from your purchase email. The key activates your
+        session and unlocks the Windows installer download. Free tier users:
+        run <code class="mono" style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px; font-size: 12px;">node tools/issue-license.js you@email.com free</code>
+        in the cloned repo to mint a free test key.
+      </p>
+
+      <form id="login-form" novalidate>
+        <div class="form-row">
+          <label for="lic-key">License key</label>
+          <textarea
+            id="lic-key" name="token"
+            class="input"
+            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.…"
+            required></textarea>
+        </div>
+
+        <div id="login-alert" class="alert err hidden"></div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px; justify-content: center;">
+          Activate &amp; continue
+        </button>
+      </form>
+
+      <div class="footer-row">
+        Don't have a key yet? Pick a plan below — checkout takes 30 seconds.
+      </div>
+    </div>
+
+    <!-- Buy card -->
+    <div class="divider">or buy a license</div>
+
+    <div class="members-card" id="buy-card">
+      <h1 style="font-size: 22px; margin-bottom: 4px;">Choose a plan</h1>
+      <p class="lede" style="font-size: 14px;">
+        Stripe Checkout — secure card payment, license key emailed instantly.
+      </p>
+
+      <div class="form-row">
+        <label for="buy-email">Email for the license key</label>
+        <input id="buy-email" type="email" class="input" placeholder="you@example.com" />
+      </div>
+
+      <div class="pricing-mini">
+        <button data-plan="standard">
+          <b>Standard</b>
+          <span class="price">$29</span>
+          <span class="small">3 devices</span>
+        </button>
+        <button data-plan="plus" class="featured">
+          <b>Plus ★</b>
+          <span class="price">$49</span>
+          <span class="small">5 devices · Vault + Nova</span>
+        </button>
+        <button data-plan="ultimate">
+          <b>Ultimate</b>
+          <span class="price">$99</span>
+          <span class="small">unlimited · all 14 tools</span>
+        </button>
+      </div>
+
+      <div id="buy-alert" class="alert hidden" style="margin-top: 18px;"></div>
+
+      <div class="footer-row">
+        Free tier? <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">Clone the repo</a>
+        and mint your own free key — no payment needed for Free + the basic Disk Scan / Quarantine.
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="foot">
+    <div class="foot-row">
+      <div>
+        <div class="brand">
+          <span class="logo"><span class="logo-block"></span><span class="logo-block"></span></span>
+          <span class="brand-name">SentivoGuard</span>
+        </div>
+        <p class="muted">Complete privacy &amp; security suite. v2.1 · Windows.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="/#tools">Tools</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/members">Members</a>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <a href="/blog">Blog</a>
+        <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="https://github.com/artffee/sentivoguard/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      © 2026 SentivoGuard · All rights reserved
+    </div>
+  </footer>
+
+  <script>
+    // ── Pre-fill from query param (e.g. dev-mode mint) or auto-redirect if logged in ──
+    (async function () {
+      // If a test_token query param is present, paste it into the form.
+      const params = new URLSearchParams(location.search);
+      const testToken = params.get("test_token");
+      if (testToken) {
+        document.getElementById("lic-key").value = testToken;
+      }
+      const errParam = params.get("error");
+      if (errParam) {
+        showAlert("login-alert", "err",
+          errParam === "login_required"
+            ? "Please activate a license key to access the download."
+            : "Activation expired or invalid: " + errParam);
+      }
+
+      // If already a member, jump to /members/download.
+      try {
+        const r = await fetch("/api/members").then(r => r.json());
+        if (r.ok && r.member) {
+          location.href = "/members/download";
+        }
+      } catch {}
+    })();
+
+    // ── Login form ──
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const token = document.getElementById("lic-key").value.trim();
+      if (!token) return;
+      hideAlert("login-alert");
+
+      const resp = await fetch("/api/license/verify", {
+        method:  "POST",
+        headers: { "content-type": "application/json" },
+        body:    JSON.stringify({ token })
+      }).then(r => r.json()).catch(() => ({ ok: false, error: "network" }));
+
+      if (!resp.ok) {
+        showAlert("login-alert", "err", "Activation failed: " + (resp.error || "unknown"));
+        return;
+      }
+      // Cookie is now set — redirect to the gated download page.
+      location.href = "/members/download";
+    });
+
+    // ── Buy buttons ──
+    document.querySelectorAll(".pricing-mini button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const plan  = btn.dataset.plan;
+        const email = document.getElementById("buy-email").value.trim();
+        hideAlert("buy-alert");
+
+        const resp = await fetch("/api/checkout", {
+          method:  "POST",
+          headers: { "content-type": "application/json" },
+          body:    JSON.stringify({ plan, email })
+        }).then(r => r.json()).catch(() => ({ ok: false, error: "network" }));
+
+        if (!resp.ok) {
+          let msg = "Checkout failed: " + (resp.error || "unknown");
+          if (resp.message) msg += " — " + resp.message;
+          showAlert("buy-alert", "err", msg);
+          return;
+        }
+
+        if (resp.devMode) {
+          // Dev: redirect with the minted token pre-filled into the activation form
+          showAlert("buy-alert", "ok",
+            "Test license minted (Stripe not configured). Activating now…");
+          location.href = "/members?test_token=" + encodeURIComponent(resp.token);
+          return;
+        }
+
+        // Production: redirect to Stripe Checkout
+        location.href = resp.url;
+      });
+    });
+
+    function showAlert(id, kind, msg) {
+      const el = document.getElementById(id);
+      el.className = "alert " + kind;
+      el.textContent = msg;
+    }
+    function hideAlert(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
