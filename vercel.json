@@ -1,11 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "name": "sentivoguard",
   "public": true,
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "outputDirectory": "web",
+  "rewrites": [
+    { "source": "/", "destination": "/landing.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SentivoGuard — Complete Privacy & Security Suite</title>
+  <meta name="description" content="14 integrated tools — VPN, AI assistant, scanner, vault, real-time monitor, quarantine, and more. One subscription replaces NordVPN + Malwarebytes + 1Password + CCleaner." />
+  <meta property="og:title" content="SentivoGuard — Complete Privacy & Security Suite" />
+  <meta property="og:description" content="Real-time disk scanning. Reversible quarantine. Encrypted vault. AI security assistant. $49/year." />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="landing.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <!-- ── Nav ─────────────────────────────────────────── -->
+  <nav class="nav">
+    <a class="brand" href="#top">
+      <span class="logo">
+        <span class="logo-block"></span><span class="logo-block"></span>
+      </span>
+      <span class="brand-name">SentivoGuard</span>
+    </a>
+    <div class="nav-links">
+      <a href="#tools">Tools</a>
+      <a href="#scanner">Scanner</a>
+      <a href="#pricing">Pricing</a>
+      <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <a class="btn btn-primary" href="#download">Download</a>
+  </nav>
+
+  <!-- ── Hero ────────────────────────────────────────── -->
+  <header class="hero" id="top">
+    <div class="hero-inner">
+      <span class="eyebrow">v2.1 · Windows · Real-time protection</span>
+      <h1>
+        14 security tools.<br />
+        <span class="grad">One installer.</span>
+      </h1>
+      <p class="lede">
+        SentivoGuard replaces NordVPN, Malwarebytes, 1Password, and CCleaner
+        with one app — including an AI security assistant and a real-time
+        supply-chain scanner. <b>$49/year</b>, not $166.
+      </p>
+
+      <div class="cta-row">
+        <a class="btn btn-primary btn-lg" href="#download">
+          <span>↓</span> Download for Windows
+        </a>
+        <a class="btn btn-ghost btn-lg" href="#pricing">See pricing</a>
+      </div>
+
+      <div class="hero-stats">
+        <div><b>14</b><span>integrated tools</span></div>
+        <div><b>7</b><span>scanner types</span></div>
+        <div><b>$49</b><span>per year (Plus)</span></div>
+        <div><b>0</b><span>external pip deps</span></div>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="terminal">
+        <div class="t-line ok">$ instinct disk-scan --quick</div>
+        <div class="t-line dim">[i] Walking 8 paths · ~/Downloads, %TEMP%, AppData/Roaming...</div>
+        <div class="t-line dim">    16,400 files · 5,266 dirs scanned</div>
+        <div class="t-line warn">[!] MEDIUM — Executable in user Temp directory</div>
+        <div class="t-line danger">[X] HIGH — Encoded PowerShell command (eval bypass)</div>
+        <div class="t-line danger">[X] HIGH — keytar.findPassword() exfil pattern</div>
+        <div class="t-line ok">[✓] Quarantined to ~/.sentivoguard/quarantine/ (SHA-256 verified)</div>
+        <div class="t-line dim">    elapsed: 7.6s · verdict: SUSPICIOUS · exit 1</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Trust strip ────────────────────────────────── -->
+  <section class="trust">
+    <div class="trust-row">
+      <div class="trust-item"><b>WireGuard</b><span>VPN protocol</span></div>
+      <div class="trust-item"><b>AES-256-GCM</b><span>vault encryption</span></div>
+      <div class="trust-item"><b>PBKDF2-200k</b><span>key derivation</span></div>
+      <div class="trust-item"><b>Claude Sonnet 4</b><span>Nova AI</span></div>
+      <div class="trust-item"><b>VirusTotal</b><span>70+ AV engines</span></div>
+      <div class="trust-item"><b>Zero pip deps</b><span>scanner core</span></div>
+    </div>
+  </section>
+
+  <!-- ── 14 tools ──────────────────────────────────── -->
+  <section class="tools" id="tools">
+    <div class="section-head">
+      <span class="section-eyebrow">Your suite · 14 tools</span>
+      <h2>One subscription, every layer of defense.</h2>
+      <p>Compare line-by-line against the apps you'd otherwise stack: <b>$166/yr</b> retail, <b>$49/yr</b> here.</p>
+    </div>
+
+    <div class="tools-grid">
+      <article class="tool-card"><div class="t-icon">⌖</div><h3>Disk Scan</h3><p>Streaming antivirus-style scan with per-finding actions. 16,000+ files in 8 seconds.</p><span class="badge real">REAL</span></article>
+      <article class="tool-card"><div class="t-icon">⚓</div><h3>Quarantine</h3><p>Reversible move-to-safe-storage with SHA-256 integrity checks. Restore any time.</p><span class="badge real">REAL</span></article>
+      <article class="tool-card"><div class="t-icon">◈</div><h3>Instinct Scanner</h3><p>7-scanner supply-chain audit: npm, pip, folder, GitHub, Docker, Ruby gem, browser extensions.</p><span class="badge">7-IN-1</span></article>
+      <article class="tool-card"><div class="t-icon">◐</div><h3>Shield VPN</h3><p>WireGuard-based, AES-256, kill switch, split tunneling, custom DNS.</p><span class="badge">VPN</span></article>
+      <article class="tool-card"><div class="t-icon">★</div><h3>Nova AI</h3><p>Claude Sonnet 4 security assistant. Explains threats, runs scans, answers in plain English.</p><span class="badge plus">PLUS</span></article>
+      <article class="tool-card"><div class="t-icon">▣</div><h3>SentivoVault</h3><p>AES-256-GCM password manager. PBKDF2-200k. Master-password lock with auto-lock.</p><span class="badge plus">PLUS</span></article>
+      <article class="tool-card"><div class="t-icon">◇</div><h3>SentivoClean</h3><p>Real cache enumeration + safe deletion. Reclaims gigabytes from Temp / Chrome / Edge / thumbs.</p><span class="badge real">REAL</span></article>
+      <article class="tool-card"><div class="t-icon">◉</div><h3>SentivoWatch</h3><p>Real-time per-process network monitor. Flags suspicious outbound connections.</p><span class="badge real">REAL</span></article>
+      <article class="tool-card"><div class="t-icon">⊘</div><h3>SentivoBlock</h3><p>System-wide DNS-level ad and tracker blocking. Works across every browser and app.</p><span class="badge">STD</span></article>
+      <article class="tool-card"><div class="t-icon">▤</div><h3>SentivoWall</h3><p>Windows Firewall visual manager. Per-app rules, port + IP range blocking.</p><span class="badge plus">PLUS</span></article>
+      <article class="tool-card"><div class="t-icon">▭</div><h3>SentivoChat</h3><p>End-to-end encrypted messaging. Zero-knowledge server, NaCl ciphertext only.</p><span class="badge plus">PLUS</span></article>
+      <article class="tool-card"><div class="t-icon">⌖</div><h3>SentivoDNS</h3><p>DoH support. One-click 1.1.1.1 / 8.8.8.8 / custom. Blocks malicious domains.</p><span class="badge plus">PLUS</span></article>
+      <article class="tool-card"><div class="t-icon">⇌</div><h3>SentivoTransfer</h3><p>Encrypted P2P file transfer. One-time keys. Server never sees plaintext.</p><span class="badge ult">ULTIMATE</span></article>
+      <article class="tool-card"><div class="t-icon">⌒</div><h3>SentivoHotspot</h3><p>Turn your PC into a protected WiFi AP. Phones, tablets, TVs inherit your VPN automatically.</p><span class="badge ult">ULTIMATE</span></article>
+    </div>
+  </section>
+
+  <!-- ── Scanner deep dive ─────────────────────────── -->
+  <section class="scanner" id="scanner">
+    <div class="scanner-grid">
+      <div>
+        <span class="section-eyebrow">Real-time protection</span>
+        <h2>Detection that doesn't sleep.</h2>
+        <p>SentivoGuard's daemon watches Downloads, Temp, and AppData with <span class="mono">fs.watch</span>. Any new file gets a verdict before you click it.</p>
+        <ul class="check-list">
+          <li>8 threat categories: credential theft, network exfil, code execution, obfuscation, persistence, mining, ransomware, dropper patterns</li>
+          <li>Filename heuristics: typo-squatted system processes, double extensions (<span class="mono">invoice.pdf.exe</span>), phishing-themed names</li>
+          <li>Location heuristics: executables in Temp, AppData/Roaming outside known-vendor folders, rare extensions in Downloads</li>
+          <li>Optional VirusTotal lookup: hash → 70+ commercial AV engines, free tier 4/min</li>
+          <li>Quarantine is <b>reversible</b> — SHA-256 stored, restore returns the byte-for-byte original</li>
+        </ul>
+      </div>
+
+      <div class="terminal sm">
+        <div class="t-line ok">▶ Real-time monitor active</div>
+        <div class="t-line dim">  watching 5 paths · 0 events</div>
+        <div class="t-line"></div>
+        <div class="t-line warn">[!] new file flagged</div>
+        <div class="t-line">    sg-realtime-test-1778209765577.ps1</div>
+        <div class="t-line dim">    ~/Downloads/sg-realtime-test-...</div>
+        <div class="t-line">    LOW · Executable in Downloads</div>
+        <div class="t-line">    [Quarantine]  [Whitelist]  [↗ VT]</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Pricing ───────────────────────────────────── -->
+  <section class="pricing" id="pricing">
+    <div class="section-head center">
+      <span class="section-eyebrow">Pricing</span>
+      <h2>Cheaper than any one of the apps it replaces.</h2>
+      <p>NordVPN $60 + Malwarebytes $40 + 1Password $36 + CCleaner $30 = <b>$166/yr.</b><br />SentivoGuard Plus = <b>$49/yr.</b></p>
+    </div>
+
+    <div class="tier-grid">
+      <article class="tier">
+        <header><h3>Free</h3><div class="price"><b>$0</b><span>/yr</span></div></header>
+        <ul>
+          <li>Disk Scan + Quarantine</li>
+          <li>Instinct Scanner (npm + folder)</li>
+          <li>SentivoClean (basic)</li>
+          <li>Manual scans</li>
+          <li>1 device</li>
+        </ul>
+        <a class="btn btn-ghost" href="#download">Download free</a>
+      </article>
+
+      <article class="tier">
+        <header><h3>Standard</h3><div class="price"><b>$29</b><span>/yr</span></div></header>
+        <ul>
+          <li>Real-time protection</li>
+          <li>Shield VPN (10 servers)</li>
+          <li>SentivoBlock + SentivoWatch</li>
+          <li>SentivoDefend</li>
+          <li>3 devices · email support</li>
+        </ul>
+        <a class="btn btn-ghost" href="#buy">Get Standard</a>
+      </article>
+
+      <article class="tier featured">
+        <span class="ribbon">Most popular</span>
+        <header><h3>Plus</h3><div class="price"><b>$49</b><span>/yr</span></div></header>
+        <ul>
+          <li>Everything in Standard</li>
+          <li>Nova AI (1M tokens/mo)</li>
+          <li>SentivoVault (AES-256)</li>
+          <li>SentivoChat + SentivoDNS</li>
+          <li>Shield VPN (all servers)</li>
+          <li>5 devices · priority support</li>
+        </ul>
+        <a class="btn btn-primary" href="#buy">Get Plus</a>
+      </article>
+
+      <article class="tier">
+        <header>
+          <h3>Ultimate</h3>
+          <div class="price"><b>$99</b><span>/yr</span><div class="lifetime">or $179 lifetime</div></div>
+        </header>
+        <ul>
+          <li>All 14 tools unlocked</li>
+          <li>SentivoTransfer (P2P)</li>
+          <li>SentivoHotspot</li>
+          <li>SentivoDrivers</li>
+          <li>Nova AI (5M tokens/mo)</li>
+          <li>Unlimited devices</li>
+        </ul>
+        <a class="btn btn-ghost" href="#buy">Get Ultimate</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ── Download ──────────────────────────────────── -->
+  <section class="download" id="download">
+    <div class="download-card">
+      <div>
+        <span class="section-eyebrow">Available now</span>
+        <h2>SentivoGuard for Windows</h2>
+        <p>NSIS installer · ~76 MB · runs on Windows 10/11 · auto-starts in tray · v2.1.0</p>
+      </div>
+      <div class="download-actions">
+        <a class="btn btn-primary btn-lg"
+           href="https://github.com/artffee/sentivoguard/releases/latest/download/SentivoGuard-Setup-2.1.0.exe">
+          <span>↓</span> Download .exe
+        </a>
+        <a class="btn btn-ghost"
+           href="https://github.com/artffee/sentivoguard"
+           target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+    </div>
+    <p class="download-fineprint">
+      Free tier doesn't require a license key. Plus / Ultimate keys are emailed
+      after Stripe checkout — paste them into <span class="mono">Settings → License key</span>.
+      <br />macOS / Linux: build from source — <span class="mono">npm install &amp;&amp; npm run build:mac</span>
+    </p>
+  </section>
+
+  <!-- ── Buy (placeholder for Stripe) ──────────────── -->
+  <section class="buy" id="buy">
+    <h2>Get a license key</h2>
+    <p class="muted">Stripe checkout integration is wired but inactive on this preview. To test the activation flow, mint a key locally:</p>
+    <pre class="codeblock"><span class="dim"># on a machine with the SentivoGuard repo cloned</span>
+SG_LICENSE_SECRET=your-secret \
+  node tools/issue-license.js you@email.com plus 365</pre>
+    <p class="muted">Paste the resulting JWT into <span class="mono">Settings → License key</span> in the app to unlock Plus features.</p>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────── -->
+  <footer class="foot">
+    <div class="foot-row">
+      <div>
+        <div class="brand">
+          <span class="logo"><span class="logo-block"></span><span class="logo-block"></span></span>
+          <span class="brand-name">SentivoGuard</span>
+        </div>
+        <p class="muted">Complete privacy &amp; security suite. v2.1 · Windows.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="#tools">Tools</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#download">Download</a>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <a href="https://github.com/artffee/sentivoguard" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/artffee/sentivoguard/blob/main/README.md" target="_blank" rel="noopener">Docs</a>
+        <a href="https://github.com/artffee/sentivoguard/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="https://github.com/artffee/sentivoguard/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#terms">Terms</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      © 2026 SentivoGuard · All rights reserved
+    </div>
+  </footer>
+</body>
+</html>

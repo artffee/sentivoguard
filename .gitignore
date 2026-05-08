@@ -49,3 +49,5 @@ desktop.ini
 # gstack tooling state (not part of project)
 .gstack/
 .claude/
+
+.vercel

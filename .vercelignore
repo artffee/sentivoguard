@@ -1,0 +1,36 @@
+# Vercel only needs the /web landing page. Exclude everything else.
+
+node_modules/
+dist/
+build/
+out/
+.sentivoguard/
+.git/
+.gstack/
+.claude/
+
+# Desktop app source (the landing page is self-contained in /web)
+js/
+server/
+styles/
+tools/
+assets/
+
+# Top-level files not needed for the landing page
+.server.js
+main.js
+preload.js
+package-lock.json
+index.html
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Build artifacts
+*.exe
+*.dmg
+*.blockmap
