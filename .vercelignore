@@ -39,3 +39,8 @@ Thumbs.db
 *.exe
 *.dmg
 *.blockmap
+
+# Whitelist the gated download path — the .exe inside _dl/<random>/ ships
+# but only at an unguessable URL. Only /api/download knows the URL.
+!_dl/
+!_dl/**

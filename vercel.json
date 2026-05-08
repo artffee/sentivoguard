@@ -31,6 +31,15 @@
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
       ]
+    },
+    {
+      "source": "/_dl/(.*)\\.exe",
+      "headers": [
+        { "key": "Content-Type",        "value": "application/octet-stream" },
+        { "key": "Content-Disposition", "value": "attachment; filename=\"SentivoGuard-Setup-2.1.0.exe\"" },
+        { "key": "Cache-Control",       "value": "private, no-store" },
+        { "key": "X-Robots-Tag",        "value": "noindex, nofollow" }
+      ]
     }
   ]
 }

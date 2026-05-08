@@ -1,44 +1,48 @@
 // GET /api/download
-// Validates the sg_license cookie. On success, 302-redirects to the .exe URL.
+// Validates the sg_license cookie. On success, 302-redirects to the private
+// .exe URL stored in SG_DOWNLOAD_URL (server-side env var only).
 // On failure, redirects to /members?error=... so the user can re-enter their key.
 //
-// PROTOTYPE NOTE: the .exe currently lives at a public GitHub Release URL.
-// Real gating means moving the binary off public hosting. Two clean upgrades:
+// Storage architecture:
+//   The .exe lives at /_dl/<128-bit-random>/SentivoGuard-Setup-2.1.0.exe in the
+//   Vercel deployment. The path is unguessable (128 bits of entropy) and is
+//   never written into HTML, JS, or CSS. The only place it appears is in the
+//   Location header of THIS function's 302 response, after the JWT cookie is
+//   verified. To rotate the URL, regenerate the hash, redeploy, and update
+//   SG_DOWNLOAD_URL — old paths stop being referenced.
 //
-//   1. Make the GitHub Release a *draft* (only repo owners can see it).
-//      Use a GITHUB_TOKEN env var here to fetch the asset via the GitHub API
-//      and stream it back. The customer never sees the source URL.
-//
-//   2. Upload the .exe to private storage (Vercel Blob, S3, Cloudflare R2)
-//      and generate a short-lived signed URL after license verification.
-//
-// Both upgrades require zero changes to the customer-facing flow — only the
-// `downloadUrl` resolution below changes.
+// HARDER-private upgrade paths (when ready):
+//   1. Vercel Blob with `getDownloadUrl()` — true short-lived signed URLs
+//      that expire in minutes. Each customer gets a fresh URL per download.
+//   2. R2 / S3 with presigned URLs — same idea, different vendor.
+//   3. Stream-through-function — fetch upstream + pipe through this function.
+//      Customer never sees any upstream URL. Watch out for function timeout
+//      (10s on Vercel Hobby) when the file is large or the network slow.
 
 const { verify } = require("../server/license");
 
 const COOKIE = "sg_license";
 
-const RELEASE_URL =
-  "https://github.com/artffee/sentivoguard/releases/download/v2.1.0/SentivoGuard-Setup-2.1.0.exe";
-
 module.exports = async function handler(req, res) {
+  const downloadUrl = process.env.SG_DOWNLOAD_URL;
+  if (!downloadUrl) {
+    return text(res, 500, "Download not configured. Set SG_DOWNLOAD_URL on the server.");
+  }
+
   const token = readCookie(req, COOKIE);
   if (!token) return redirect(res, "/members?error=login_required");
 
   const r = verify(token);
   if (!r.ok) return redirect(res, "/members?error=" + encodeURIComponent(r.error));
-
-  // Plan check — Free tier can also download (no key required, but they'd land
-  // here only if they have a key already). Standard / Plus / Ultimate all OK.
-  // If a future SKU shouldn't get the .exe, gate here.
   if (!r.payload.plan) return redirect(res, "/members?error=no_plan");
 
-  // 302 to the actual download. Browser follows automatically and the file
-  // saves to disk.
+  // Defense-in-depth: tell intermediaries not to cache or share this redirect,
+  // and ensure the unguessable URL doesn't leak through Referer.
+  res.setHeader("Cache-Control",   "private, no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma",          "no-cache");
+  res.setHeader("Referrer-Policy", "no-referrer");
   res.statusCode = 302;
-  res.setHeader("Location", RELEASE_URL);
-  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Location", downloadUrl);
   res.end();
 };
 
@@ -56,4 +60,11 @@ function redirect(res, location) {
   res.setHeader("Location", location);
   res.setHeader("Cache-Control", "no-store");
   res.end();
+}
+
+function text(res, status, body) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(body);
 }
