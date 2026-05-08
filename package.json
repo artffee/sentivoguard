@@ -1,0 +1,56 @@
+{
+  "name": "sentivoguard",
+  "version": "2.1.0",
+  "description": "SentivoGuard — Complete privacy & security suite. 14 integrated tools.",
+  "main": "main.js",
+  "author": "SentivoGuard",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start":         "electron .",
+    "serve":         "node .server.js",
+    "issue-license": "node tools/issue-license.js",
+    "build:win":     "electron-builder --win --x64",
+    "build:mac":     "electron-builder --mac",
+    "build:dir":     "electron-builder --dir"
+  },
+  "build": {
+    "appId":       "com.sentivoguard.app",
+    "productName": "SentivoGuard",
+    "asar":        true,
+    "files": [
+      "main.js",
+      "preload.js",
+      ".server.js",
+      "index.html",
+      "styles/**",
+      "js/**",
+      "server/**",
+      "tools/**",
+      "assets/**",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
+    "win": {
+      "target":   [{ "target": "nsis", "arch": ["x64"] }],
+      "publisherName": "SentivoGuard"
+    },
+    "mac": {
+      "target":   "dmg",
+      "category": "public.app-category.utilities"
+    },
+    "nsis": {
+      "oneClick":                          false,
+      "perMachine":                        false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut":             true,
+      "createStartMenuShortcut":           true,
+      "shortcutName":                      "SentivoGuard"
+    }
+  },
+  "devDependencies": {
+    "electron":         "^32.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

@@ -1,0 +1,30 @@
+SentivoGuard
+Copyright (c) 2026 SentivoGuard
+
+All Rights Reserved.
+
+This source code is made available for transparency and personal review.
+Commercial distribution of pre-built binaries is gated by paid license keys
+(see Settings → License key in the application).
+
+You may:
+  - Read this source code
+  - Build it locally for personal, non-commercial use
+  - Submit issues and pull requests on GitHub
+
+You may NOT:
+  - Distribute pre-built binaries (signed or unsigned)
+  - Mint license keys for resale
+  - Remove or modify the license-verification logic and redistribute
+  - Sublicense, sell, or commercially exploit any portion of this code
+    without a commercial agreement
+
+For commercial licensing inquiries: hello@sentivoguard.com
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

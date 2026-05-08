@@ -1,0 +1,51 @@
+# Dependencies & build output
+node_modules/
+dist/
+build/
+out/
+
+# Electron-builder caches & artifacts
+*.exe
+*.dmg
+*.deb
+*.rpm
+*.snap
+*.AppImage
+*.blockmap
+
+# Local secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+api-key.txt
+license-secret.local
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# User runtime data (the app writes here on the user's machine)
+.sentivoguard/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vercel / Netlify deploy state
+.vercel/
+.netlify/
+
+# Test scratch
+/tmp/
+*.tmp
+
+# gstack tooling state (not part of project)
+.gstack/
+.claude/
