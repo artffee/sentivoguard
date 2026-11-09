@@ -14,6 +14,7 @@ out/
 # (the API functions need to verify JWTs)
 server/*
 !server/license.js
+!server/license-public.pem
 
 # Other desktop-only directories
 js/
@@ -25,7 +26,6 @@ assets/
 .server.js
 main.js
 preload.js
-package-lock.json
 index.html
 
 # OS / editor cruft
@@ -44,3 +44,9 @@ Thumbs.db
 # but only at an unguessable URL. Only /api/download knows the URL.
 !_dl/
 !_dl/**
+
+# Never publish local tests or signing utilities
+tests/
+docs/
+.github/
+.env*

@@ -9,8 +9,8 @@ SG.router.register("settings", function (view) {
 
   const modeLabel =
     mode === "electron" ? "Electron · secure IPC" :
-    mode === "browser"  ? "Browser · direct fetch" :
-                          "Mock · offline replies";
+    mode === "browser"  ? "Unavailable in browser" :
+                          "Not configured";
   const modeTag =
     mode === "electron" ? "tag-ok" :
     mode === "browser"  ? "tag-plus" : "tag-warn";
@@ -22,7 +22,7 @@ SG.router.register("settings", function (view) {
         el("h4", { class: "card-title" }, "Nova AI · Anthropic API key"),
         el("p", { class: "card-sub" },
           "Paste your Anthropic API key to enable real Nova responses. " +
-          "Stored in localStorage for browser mode; in Electron the renderer never sees it.")
+          "Saved using OS encryption in the desktop app. Provider usage is billed to your Anthropic account.")
       ),
       el("span", { class: "tag " + modeTag }, modeLabel)
     ),
@@ -59,15 +59,14 @@ SG.router.register("settings", function (view) {
         ),
         el("div", { class: "tiny muted", style: "margin-top: 6px;" },
           "Get a key at console.anthropic.com → API keys. " +
-          "The browser-mode call uses ", el("span", { class: "mono" }, "anthropic-dangerous-direct-browser-access: true"),
-          " — fine for local prototyping, but production should proxy through your own backend."
+          "Nova is available in the desktop app through its secure main process."
         )
       )
     ),
 
     el("div", { class: "tool-grid-3", style: "margin-top: 18px;" },
       stat("Tokens used (lifetime)", (SG.user.novaTokensUsed || 0).toLocaleString()),
-      stat("Plan limit / month",    (SG.user.novaTokensLimit || 1_000_000).toLocaleString()),
+      stat("API billing", "Your provider account"),
       stat("Conversation history",   (SG.store.get("novaHistory", []).length) + " messages")
     )
   );
@@ -168,7 +167,7 @@ SG.router.register("settings", function (view) {
         el("p", { class: "card-sub" },
           licInfo.licensed
             ? "Licensed to " + licInfo.email + " · " + licInfo.daysLeft + " days remaining."
-            : "Paste the license key from your purchase email to unlock Plus / Ultimate features.")
+            : "Copy your current license from the Members page to activate paid features.")
       ),
       el("span", {
         class: "tag " + (licInfo.licensed ? "tag-ok" : "tag-warn")
@@ -213,7 +212,7 @@ SG.router.register("settings", function (view) {
             }, "Activate"),
             el("button", {
               class: "btn btn-ghost",
-              onclick: () => alert("After Stripe checkout you receive a license key by email. Paste the JWT token (eyJ…) above and click Activate.\n\nFor testing without payment:\n  node tools/issue-license.js you@example.com plus 365")
+              onclick: () => alert("Sign in at sentivoguard.com/members. After payment is confirmed, copy your license key and paste it here. A connection is needed at least once every three days to refresh paid access.")
             }, "Where do I get a key?")
           )
         )
@@ -293,19 +292,19 @@ SG.router.register("settings", function (view) {
   function hideEditor() {
     document.getElementById("apikey-editor").classList.add("hidden");
   }
-  function saveKey() {
+  async function saveKey() {
     const v = document.getElementById("apikey-input").value.trim();
     if (!v) return;
     if (!v.startsWith("sk-ant-")) {
       if (!confirm("That doesn't look like an Anthropic key (expected prefix sk-ant-…). Save anyway?")) return;
     }
-    SG.api.setKey(v);
+    try { await SG.api.setKey(v); } catch (e) { alert(e.message); return; }
     SG.activity_log.log("ok", "✓", "<b>Settings</b> · Anthropic API key configured");
     SG.router.go("settings");
   }
-  function clearKey() {
-    if (!confirm("Remove the saved API key? Nova will fall back to mock responses.")) return;
-    SG.api.clearKey();
+  async function clearKey() {
+    if (!confirm("Remove the saved API key? Nova will be unavailable.")) return;
+    await SG.api.clearKey();
     SG.activity_log.log("info", "↓", "<b>Settings</b> · Anthropic API key removed");
     SG.router.go("settings");
   }

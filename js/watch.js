@@ -57,7 +57,7 @@ SG.router.register("watch", function (view) {
     if (status && !quiet) status.textContent = "loading…";
 
     let conns;
-    let source = "mock";
+    let source = "unavailable";
 
     if (SG.backend.isReal()) {
       const r = await SG.backend.getConnections();
@@ -65,11 +65,11 @@ SG.router.register("watch", function (view) {
         conns = r.connections;
         source = r.source || "real";
       } else {
-        conns = SG.connections;
-        source = "mock (backend error: " + (r.error || "unknown") + ")";
+        conns = [];
+        source = "unavailable (backend error: " + (r.error || "unknown") + ")";
       }
     } else {
-      conns = SG.connections;
+      conns = [];
     }
 
     if (status) status.textContent = source;
@@ -85,7 +85,7 @@ SG.router.register("watch", function (view) {
     out.append(
       statCard("◉ Active connections", String(conns.length), "across " + procs + " processes"),
       statCard("⊘ Flagged outbound",   String(flagged),       "heuristic"),
-      statCard("◐ Source",              SG.backend.isReal() ? "Real" : "Mock", SG.backend.state.platform || "—")
+      statCard("◐ Source",              SG.backend.isReal() ? "Local service" : "Unavailable", SG.backend.state.platform || "—")
     );
   }
 

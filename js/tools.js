@@ -180,12 +180,12 @@ placeholders.forEach(p => {
   SG.router.register(p.id, function (view) {
     const el = SG.el;
 
-    // Status badge — REAL · LIVE if backend wired, COMING SOON if not yet,
+    // Status badge — READ-ONLY if backend wired, COMING SOON if not yet,
     // ULTIMATE ONLY for tier-gated, otherwise nothing.
     const isReal = p.real && SG.backend && SG.backend.isReal();
     let statusTag = null;
     if (p.comingSoon)        statusTag = el("span", { class: "tag tag-warn" }, "COMING SOON");
-    else if (isReal)         statusTag = el("span", { class: "tag tag-ok" },   "REAL · LIVE");
+    else if (isReal)         statusTag = el("span", { class: "tag tag-ok" },   "READ-ONLY");
     else if (p.real)         statusTag = el("span", { class: "tag" },          "BACKEND OFFLINE");
     else if (p.tier === "Ultimate")
                               statusTag = el("span", { class: "tag tag-ult" }, "ULTIMATE ONLY");
@@ -196,7 +196,7 @@ placeholders.forEach(p => {
         el("div", {
           class: "qs-card-value",
           style: "font-size: 18px; margin-top: 4px;"
-        }, v)
+        }, p.comingSoon ? "Not available" : "—")
       )
     );
 
@@ -216,9 +216,8 @@ placeholders.forEach(p => {
             statusTag,
             el("button", {
               class: p.comingSoon ? "btn btn-ghost" : "btn btn-primary",
-              disabled: p.comingSoon ? "disabled" : null
-            }, p.comingSoon ? "Notify me" :
-                p.tier === "Ultimate" ? "Upgrade to Ultimate" : "Configure")
+              disabled: "disabled"
+            }, p.comingSoon ? "Coming soon" : "Read-only status")
           )
         )
       ),
@@ -259,9 +258,9 @@ SG.router.register("nova", function (view) {
         "Ask Nova anything about cybersecurity, threats, scan results, or any of the 14 SentivoGuard tools. " +
         "The chat panel is open at the bottom-right."),
       el("div", { class: "tag-row" },
-        el("span", { class: "tag tag-plus" }, "PLUS · 1M tokens / mo"),
+        el("span", { class: "tag tag-plus" }, "Your API key required"),
         el("span", { class: "tag" }, "Claude Sonnet 4"),
-        el("span", { class: "tag" }, "Streaming responses")
+        el("span", { class: "tag" }, "Text responses")
       ),
       el("button", {
         class: "btn btn-primary",
@@ -269,4 +268,4 @@ SG.router.register("nova", function (view) {
       }, "Open Nova")
     )
   );
-}, { title: "Nova AI", sub: "Voice-capable AI security assistant · Plus tier" });
+}, { title: "Nova AI", sub: "AI explanations · Your API account" });

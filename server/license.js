@@ -1,112 +1,54 @@
-// SentivoGuard — license module.
-// JWT HS256 keys signed by the billing backend, verified locally.
-//
-// PRODUCTION:  set the SG_LICENSE_SECRET env var on your billing backend AND
-//              on the same desktop app instance that needs to verify keys.
-//              For maximum safety switch alg from HS256 to RS256 and ship
-//              only the public key in the desktop bundle.
-//
-// LOCAL DEV:   if SG_LICENSE_SECRET is unset, the module derives a per-machine
-//              ephemeral secret stored at ~/.sentivoguard/license-secret.local.
-//              That keeps things working out-of-the-box for development without
-//              hardcoding anything secret in source.
-
-const crypto = require("crypto");
-const fs     = require("fs");
-const path   = require("path");
-const os     = require("os");
-
-function loadOrGenerateLocalSecret() {
-  const dir  = path.join(os.homedir(), ".sentivoguard");
-  const file = path.join(dir, "license-secret.local");
-  try { fs.mkdirSync(dir, { recursive: true }); } catch {}
-  try {
-    const existing = fs.readFileSync(file, "utf8").trim();
-    if (existing.length >= 32) return existing;
-  } catch {}
-  const generated = crypto.randomBytes(48).toString("base64");
-  try { fs.writeFileSync(file, generated, { mode: 0o600 }); } catch {}
-  return generated;
-}
-
-const SECRET = process.env.SG_LICENSE_SECRET || loadOrGenerateLocalSecret();
-
+// Ed25519: only the billing service holds the private signing key.
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 const PLANS = {
-  free:     { name: "Free",     devices: 1, novaTokens: 0,           realtime: false, vault: false, ultimate: false },
-  standard: { name: "Standard", devices: 3, novaTokens: 0,           realtime: false, vault: false, ultimate: false },
-  plus:     { name: "Plus",     devices: 5, novaTokens: 1_000_000,   realtime: true,  vault: true,  ultimate: false },
-  ultimate: { name: "Ultimate", devices: 999, novaTokens: 5_000_000, realtime: true,  vault: true,  ultimate: true  }
+  free: { name: 'Free', devices: 1, novaTokens: 0, realtime: false, vault: false, ultimate: false },
+  standard: { name: 'Standard', devices: 3, novaTokens: 0, realtime: true, vault: false, ultimate: false },
+  plus: { name: 'Plus', devices: 5, novaTokens: 0, realtime: true, vault: true, ultimate: false },
+  ultimate: { name: 'Ultimate', devices: 999, novaTokens: 0, realtime: true, vault: true, ultimate: true }
 };
-
-function b64url(buf) {
-  return Buffer.from(buf).toString("base64")
-    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+const pem = value => (value || '').replace(/\\n/g, '\n');
+function publicKey() {
+  if (process.env.SG_LICENSE_PUBLIC_KEY) return pem(process.env.SG_LICENSE_PUBLIC_KEY);
+  try { return fs.readFileSync(path.join(__dirname, 'license-public.pem'), 'utf8'); } catch { return ''; }
 }
-function b64urlDecode(str) {
-  str = str.replace(/-/g, "+").replace(/_/g, "/");
-  while (str.length % 4) str += "=";
-  return Buffer.from(str, "base64");
+function canIssue() {
+  try {
+    const privateKey = crypto.createPrivateKey(pem(process.env.SG_LICENSE_PRIVATE_KEY));
+    const actual = crypto.createPublicKey(privateKey);
+    const expected = crypto.createPublicKey(publicKey());
+    return privateKey.asymmetricKeyType === 'ed25519' && actual.equals(expected);
+  } catch { return false; }
 }
-
-function sign(payload) {
-  const header  = { alg: "HS256", typ: "JWT" };
-  const headerB = b64url(JSON.stringify(header));
-  const payB    = b64url(JSON.stringify(payload));
-  const sig     = crypto.createHmac("sha256", SECRET)
-                        .update(headerB + "." + payB)
-                        .digest();
-  return headerB + "." + payB + "." + b64url(sig);
+function issue({ email, plan = 'free', days = 3, expires, subscription }) {
+  if (!canIssue() || !Object.hasOwn(PLANS, plan) || typeof email !== 'string') throw new Error('license_unavailable');
+  const now = Math.floor(Date.now() / 1000);
+  const exp = expires || now + Math.min(days, 3) * 86400;
+  if (!Number.isInteger(exp) || exp <= now) throw new Error('expired');
+  const payload = { typ: 'license', iss: 'sentivoguard', aud: 'sentivoguard-desktop', sub: email, plan,
+    devices: PLANS[plan].devices, iat: now, nbf: now, exp, jti: crypto.randomUUID(), subscription: subscription || null };
+  const data = Buffer.from(JSON.stringify({ alg: 'EdDSA', typ: 'JWT' })).toString('base64url') + '.' + Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const token = data + '.' + crypto.sign(null, Buffer.from(data), pem(process.env.SG_LICENSE_PRIVATE_KEY)).toString('base64url');
+  if (!verify(token).ok) throw new Error('license_key_mismatch');
+  return token;
 }
-
-// Returns { ok: true, payload } or { ok: false, error }.
 function verify(token) {
-  if (typeof token !== "string") return { ok: false, error: "missing_token" };
-  const parts = token.split(".");
-  if (parts.length !== 3)         return { ok: false, error: "malformed" };
-
-  const [headerB, payB, sigB] = parts;
-  const expected = crypto.createHmac("sha256", SECRET)
-                         .update(headerB + "." + payB)
-                         .digest();
-  let provided;
-  try { provided = b64urlDecode(sigB); }
-  catch { return { ok: false, error: "bad_signature_b64" }; }
-
-  if (expected.length !== provided.length ||
-      !crypto.timingSafeEqual(expected, provided))
-    return { ok: false, error: "signature_mismatch" };
-
-  let payload;
-  try { payload = JSON.parse(b64urlDecode(payB).toString("utf8")); }
-  catch { return { ok: false, error: "payload_parse" }; }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (payload.exp && payload.exp < now) return { ok: false, error: "expired", payload };
-  if (payload.nbf && payload.nbf > now) return { ok: false, error: "not_yet_valid" };
-
-  const tier = PLANS[payload.plan];
-  if (!tier) return { ok: false, error: "unknown_plan" };
-
-  return { ok: true, payload, tier };
+  try {
+    if (typeof token !== 'string' || token.length > 8000) throw new Error();
+    const parts = token.split('.');
+    if (parts.length !== 3 || parts.some(p => !/^[A-Za-z0-9_-]+$/.test(p))) throw new Error();
+    const [h, p, s] = parts;
+    const header = JSON.parse(Buffer.from(h, 'base64url'));
+    if (header.alg !== 'EdDSA' || header.typ !== 'JWT') throw new Error();
+    if (!crypto.verify(null, Buffer.from(h + '.' + p), publicKey(), Buffer.from(s, 'base64url'))) throw new Error();
+    const payload = JSON.parse(Buffer.from(p, 'base64url'));
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.iss !== 'sentivoguard' || payload.aud !== 'sentivoguard-desktop' || payload.typ !== 'license' ||
+      !Object.hasOwn(PLANS, payload.plan) || typeof payload.sub !== 'string' || typeof payload.jti !== 'string' ||
+      !Number.isInteger(payload.exp) || payload.exp <= now || !Number.isInteger(payload.nbf) || payload.nbf > now ||
+      payload.devices !== PLANS[payload.plan].devices) throw new Error();
+    return { ok: true, payload, tier: PLANS[payload.plan] };
+  } catch { return { ok: false, error: 'invalid_or_expired_license' }; }
 }
-
-// Convenience: issue a license. Used by tools/issue-license.js after a
-// Stripe checkout webhook fires.
-function issue({ email, plan = "plus", devices, days = 365 }) {
-  if (!email)            throw new Error("email required");
-  if (!PLANS[plan])      throw new Error("unknown plan: " + plan);
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    iss:     "sentivoguard",
-    sub:     email,
-    plan:    plan,
-    devices: devices || PLANS[plan].devices,
-    iat:     now,
-    nbf:     now,
-    exp:     now + days * 86400,
-    jti:     crypto.randomBytes(8).toString("hex")
-  };
-  return sign(payload);
-}
-
-module.exports = { issue, sign, verify, PLANS };
+module.exports = { issue, verify, canIssue, publicKey, PLANS };

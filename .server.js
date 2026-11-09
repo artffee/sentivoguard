@@ -32,11 +32,16 @@ const L   = require("./server/license");
 const OS_ = require("./server/tool-os");
 
 // Start the real-time watcher daemon as soon as the server boots.
-W.start();
+// Monitoring starts only after a verified license enables it.
 
 const ROOT = __dirname;
 const PORT = (process.env.SG_PORT && Number(process.env.SG_PORT)) || 4173;
 const HOST = "127.0.0.1";
+const { createGuard, staticFile } = require('./server/local-security');
+const guard = createGuard(PORT, process.env.SG_LOCAL_TOKEN);
+let activeLicense = null;
+const hasRealtime = () => activeLicense && L.verify(activeLicense).ok && L.verify(activeLicense).tier.realtime;
+setInterval(() => { if (!hasRealtime()) W.stop(); }, 30000).unref();
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -53,9 +58,9 @@ const TYPES = {
 
 function send(res, status, headers, body) {
   res.writeHead(status, Object.assign({
-    "access-control-allow-origin":  "*",
-    "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-headers": "content-type"
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "no-store",
+    "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
   }, headers));
   res.end(body);
 }
@@ -69,7 +74,7 @@ function readBody(req, max = 1_000_000) {
     let data = "";
     req.on("data", chunk => {
       data += chunk;
-      if (data.length > max) reject(new Error("body too large"));
+      if (data.length > max) { reject(new Error("body too large")); req.destroy(); }
     });
     req.on("end", () => resolve(data));
     req.on("error", reject);
@@ -86,8 +91,9 @@ async function readJson(req) {
 // ─── API handlers ───────────────────────────────────────────────────
 
 async function api(req, res, pathname) {
-  // CORS preflight
-  if (req.method === "OPTIONS") return send(res, 204, {}, "");
+  if (!guard.allowed(req)) return json(res, 403, { ok: false, error: 'forbidden' });
+  if (['POST', 'DELETE'].includes(req.method) && !String(req.headers['content-type'] || '').startsWith('application/json')) return json(res, 415, { ok: false, error: 'json_required' });
+  if (pathname.startsWith('/api/realtime/') && pathname !== '/api/realtime/status' && !hasRealtime()) return json(res, 403, { ok: false, error: 'license_required' });
 
   try {
     if (pathname === "/api/health" && req.method === "GET") {
@@ -189,14 +195,38 @@ async function api(req, res, pathname) {
       return json(res, 200, { ok: true, paths: quickScanPaths() });
     }
 
+    if (pathname === '/api/license/deactivate' && req.method === 'POST') {
+      activeLicense = null; W.stop(); return json(res, 200, { ok: true });
+    }
     // ── License ─────────────────────────────────────────────────
     if (pathname === "/api/license/verify" && req.method === "POST") {
       const body = await readJson(req);
-      const r = L.verify(body.token || "");
+      let token = body.token || '';
+      let r = L.verify(token);
+      // Refresh short-lived leases through the fixed billing origin. Offline
+      // use is limited by the locally verified expiry; an explicit revocation wins.
+      if (r.ok && r.payload.plan !== 'free') {
+        try {
+          const response = await fetch('https://sentivoguard.com/api/license/verify', {
+            method: 'POST', signal: AbortSignal.timeout(5000),
+            headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token })
+          });
+          if (response.status === 401 || response.status === 403) {
+            activeLicense = null; W.stop(); return json(res, 403, {ok:false,error:'license_inactive'});
+          }
+          if (response.ok) {
+            const fresh = await response.json();
+            if (fresh.ok && L.verify(fresh.token).ok) { token = fresh.token; r = L.verify(token); }
+          }
+        } catch { /* Existing signed lease remains valid only until its expiry. */ }
+      }
       // Don't echo full payload to renderer if invalid — just the error code.
       if (!r.ok) return json(res, 200, { ok: false, error: r.error });
+      activeLicense = token;
+      if (r.tier.realtime) W.start(); else W.stop();
       return json(res, 200, {
         ok:       true,
+        token,
         email:    r.payload.sub,
         plan:     r.payload.plan,
         devices:  r.payload.devices,
@@ -225,7 +255,7 @@ async function api(req, res, pathname) {
         "cache-control":              "no-cache",
         "connection":                 "keep-alive",
         "x-accel-buffering":          "no",
-        "access-control-allow-origin": "*"
+        "X-Content-Type-Options": "nosniff"
       });
       // Initial hello + recent backlog so the UI has context immediately.
       res.write("data: " + JSON.stringify({ type: "hello", status: W.status() }) + "\n\n");
@@ -312,13 +342,13 @@ async function api(req, res, pathname) {
     if (pathname === "/api/whitelist" && req.method === "POST") {
       const body = await readJson(req);
       if (!body.path) return json(res, 400, { ok: false, error: "missing_path" });
-      return json(res, 200, Q.whitelistAdd(body.path));
+      return json(res, 200, await Q.whitelistAdd(body.path));
     }
 
     if (pathname === "/api/whitelist/remove" && req.method === "POST") {
       const body = await readJson(req);
       if (!body.path) return json(res, 400, { ok: false, error: "missing_path" });
-      return json(res, 200, Q.whitelistRemove(body.path));
+      return json(res, 200, await Q.whitelistRemove(body.path));
     }
 
     if (pathname === "/api/scan/disk" && req.method === "POST") {
@@ -328,7 +358,7 @@ async function api(req, res, pathname) {
         "content-type":               "application/x-ndjson",
         "cache-control":              "no-cache",
         "x-accel-buffering":          "no",
-        "access-control-allow-origin": "*"
+        "X-Content-Type-Options": "nosniff"
       });
 
       const opts = {
@@ -339,7 +369,7 @@ async function api(req, res, pathname) {
       };
 
       // If the client disconnects mid-stream, the next yield short-circuits.
-      req.on("close", () => { opts.aborted = true; });
+      res.on("close", () => { opts.aborted = true; });
       req.on("aborted", () => { opts.aborted = true; });
 
       try {
@@ -366,8 +396,10 @@ async function api(req, res, pathname) {
 
 function serveStatic(req, res, pathname) {
   if (pathname === "/" || pathname === "") pathname = "/index.html";
-  const file = path.join(ROOT, decodeURIComponent(pathname));
-  if (!file.startsWith(ROOT)) return send(res, 403, {}, "Forbidden");
+  if (!guard.trusted(req)) return send(res, 403, {}, 'Forbidden');
+  const file = staticFile(ROOT, pathname);
+  if (!file) return send(res, 404, {}, 'Not found');
+  if (pathname === '/index.html') res.setHeader('Set-Cookie', guard.cookie);
   fs.readFile(file, (err, data) => {
     if (err) return send(res, 404, {}, "Not found: " + pathname);
     send(res, 200, { "content-type": TYPES[path.extname(file)] || "application/octet-stream" }, data);
@@ -377,6 +409,7 @@ function serveStatic(req, res, pathname) {
 // ─── Server ─────────────────────────────────────────────────────────
 
 http.createServer((req, res) => {
+  if (!guard.trusted(req)) return json(res, 403, { ok: false, error: 'forbidden' });
   const u = url.parse(req.url || "/");
   const pathname = u.pathname || "/";
   if (pathname.startsWith("/api/")) return api(req, res, pathname);

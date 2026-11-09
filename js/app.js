@@ -11,7 +11,7 @@
   });
 
   // Top bar buttons
-  document.getElementById("quick-scan").addEventListener("click", () => SG.router.go("instinct"));
+  document.getElementById("quick-scan").addEventListener("click", () => SG.router.go("diskscan"));
   document.getElementById("open-nova").addEventListener("click",  () => SG.nova.open());
 
   // Backend health probe — must complete before first view render so views can
@@ -20,7 +20,8 @@
   injectBackendBadge();
 
   // Apply stored license (if any) to SG.user before views render.
-  if (SG.license) SG.license.applyToUser();
+  if (SG.license) await SG.license.initialize();
+  await SG.api.init();
 
   // Listen for nav events from the Electron tray menu.
   if (window.sentivo && window.sentivo.onNav) {
@@ -46,19 +47,6 @@
   // Init Nova chat panel
   SG.nova.init();
 
-  // Token-counter ticker (mock dashboard liveness)
-  setInterval(() => {
-    document.querySelectorAll(".hero-stat-num").forEach(node => {
-      const txt = node.textContent;
-      if (/^[\d,]+$/.test(txt)) {
-        const n = parseInt(txt.replace(/,/g, ""), 10);
-        if (n > 100 && n < 50000 && Math.random() < 0.6) {
-          node.textContent = (n + Math.floor(Math.random() * 5) + 1).toLocaleString();
-        }
-      }
-    });
-  }, 4500);
-
   // Re-render the backend badge on probe state changes.
   document.addEventListener("sg:backend", injectBackendBadge);
 
@@ -78,7 +66,7 @@
                         (SG.backend.state.platform || "ok");
     } else {
       badge.className = "status-pill status-warn";
-      badge.innerHTML = '<span class="status-dot"></span> Mock mode';
+      badge.innerHTML = '<span class="status-dot"></span> Service unavailable';
       badge.title = "Open via http://127.0.0.1:4173 to enable real scans";
     }
   }

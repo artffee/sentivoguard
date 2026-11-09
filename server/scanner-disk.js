@@ -154,6 +154,9 @@ async function* scanDisk(opts = {}) {
   const findings = [];
   let filesScanned = 0;
   let dirsScanned  = 0;
+  let skipped = 0;
+  let truncated = 0;
+  const visited = new Set();
 
   yield { type: "start", roots, mode: quick ? "quick" : "custom", maxFiles, ts: start };
 
@@ -173,16 +176,16 @@ async function* scanDisk(opts = {}) {
       dirsScanned++;
       let entries;
       try { entries = await fsp.readdir(dir, { withFileTypes: true }); }
-      catch { continue; }
+      catch { skipped++; continue; }
 
       for (const e of entries) {
         if (isAborted() || filesScanned >= maxFiles) break;
-        if (e.isSymbolicLink()) continue;
-        if (SKIP_DIR_NAMES.has(e.name)) continue;
+        if (e.isSymbolicLink()) { skipped++; continue; }
+        if (SKIP_DIR_NAMES.has(e.name)) { skipped++; continue; }
         const full = path.join(dir, e.name);
 
         if (e.isDirectory()) {
-          if (depth < 8) queue.push([full, depth + 1]);
+          if (depth < 8) queue.push([full, depth + 1]); else skipped++;
           continue;
         }
         if (!e.isFile()) continue;
@@ -192,6 +195,8 @@ async function* scanDisk(opts = {}) {
           continue;
         }
 
+        if (visited.has(full)) continue;
+        visited.add(full);
         filesScanned++;
 
         // Cheap stat for size-based heuristics
@@ -203,30 +208,31 @@ async function* scanDisk(opts = {}) {
           const meta = inspectFileMeta(full, baseDir, st);
           for (const f of meta) {
             findings.push(f);
-            yield { type: "finding", ...f };
+            yield { type: "finding", ...f, absolutePath: full, root: baseDir, confidence: "heuristic" };
           }
         } else if (isTextExt(e.name) && st && st.size > 0 && st.size < 5_000_000) {
           // Text scripts: read + pattern scan (skip if > 5 MB to avoid massive logs).
           let content;
           try { content = (await fsp.readFile(full, "utf8")).slice(0, MAX_BYTES_PER_FILE); }
           catch { continue; }
+          if (st.size > MAX_BYTES_PER_FILE) truncated++;
           const hits = scanText(content, full, baseDir);
           for (const f of hits) {
             findings.push(f);
-            yield { type: "finding", ...f };
+            yield { type: "finding", ...f, absolutePath: full, root: baseDir, confidence: "heuristic" };
           }
           // Also run name/location for scripts.
           const meta = inspectFileMeta(full, baseDir, st);
           for (const f of meta) {
             findings.push(f);
-            yield { type: "finding", ...f };
+            yield { type: "finding", ...f, absolutePath: full, root: baseDir, confidence: "heuristic" };
           }
         } else {
           // For everything else, at least check the filename heuristic.
           const meta = inspectFileMeta(full, baseDir, st);
           for (const f of meta) {
             findings.push(f);
-            yield { type: "finding", ...f };
+            yield { type: "finding", ...f, absolutePath: full, root: baseDir, confidence: "heuristic" };
           }
         }
 
@@ -245,7 +251,9 @@ async function* scanDisk(opts = {}) {
   const verdict = computeVerdict(findings);
   yield {
     type: "complete",
-    verdict: verdict.label,
+    verdict: isAborted() || filesScanned >= maxFiles ? 'INCOMPLETE' : verdict.label,
+    coverage: { limited: true, fileLimitReached: filesScanned >= maxFiles, skipped, truncated,
+      note: 'Script patterns and file metadata only. No binary content analysis. No findings does not prove a file is safe.' },
     exitCode: verdict.exit,
     aborted: isAborted(),
     stats: {

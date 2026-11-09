@@ -25,12 +25,9 @@ SG.nova = (function () {
   }
 
   function welcome() {
-    const mode = SG.api.getMode();
-    if (mode === "electron")
-      return "Hi, I'm **Nova**. I'm wired to the real Claude API via the secure Electron bridge — your key never leaves the main process. Ask me anything.";
-    if (mode === "browser")
-      return "Hi, I'm **Nova**. Real Claude API is connected (`" + SG.api.MODEL + "`). Ask me about scans, threats, or any of your 14 SentivoGuard tools.";
-    return "Hi, I'm **Nova**. I'm running in **mock mode** — open `Settings` and paste an Anthropic API key (`sk-ant-…`) to enable real responses. The mock can still answer questions about Instinct, the VPN, and quarantine commands.";
+    return SG.api.getMode() === 'electron'
+      ? 'Nova is configured. Paste scan findings to discuss them. Conversations are sent to Anthropic and billed to your API account. I cannot run scans or change your settings.'
+      : 'Nova is unavailable. Configure your own Anthropic API key in desktop Settings. No simulated security answers are provided.';
   }
 
   function addUser(text) {

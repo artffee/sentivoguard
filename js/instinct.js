@@ -15,7 +15,7 @@ SG.router.register("instinct", function (view) {
         el("h3", { style: "margin: 4px 0 6px; font-size: 18px;" },
           "7-Scanner parallel AI engine"),
         el("div", { class: "muted", style: "font-size: 12.5px;" },
-          "npm and folder scanners hit the real backend. Pip / GitHub / Gem / Docker / Extension still mock for now.")
+          "Scan local files, packages, repositories, Docker images, and browser extensions. Findings require review.")
       ),
       el("div", { class: "row" },
         realBadge,
@@ -287,5 +287,5 @@ SG.router.register("instinct", function (view) {
 
 }, {
   title: "Instinct Scanner",
-  sub: "npm + folder run real backend scans · pip / github / gem / docker / extension are mock"
+  sub: "Pattern-based scans · requires the local service"
 });

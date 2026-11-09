@@ -202,7 +202,7 @@ SG.backend = (function () {
     },
     async vtClearKey() {
       if (!state.available) return { ok: false, error: "no_backend" };
-      return call("/api/virustotal/key", { method: "DELETE" });
+      return call("/api/virustotal/key", { method: "DELETE", headers: { "content-type": "application/json" } });
     },
     async vtLookup(arg) {
       if (!state.available) return { ok: false, error: "no_backend" };

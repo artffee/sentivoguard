@@ -36,6 +36,14 @@ SG.store = (function () {
 
   // Initial load is synchronous so consumers can read on first import.
   load();
+  if (!data.statusMigrationV2) {
+    delete data.vpnState;
+    // Preserve existing history for export without displaying unverifiable sample status.
+    data.legacyActivity = data.activity || [];
+    data.activity = data.legacyActivity.filter(a => / · REAL · /.test(a.msg || ''));
+    data.statusMigrationV2 = true;
+    flush();
+  }
   // Flush before unload in case a write is pending.
   window.addEventListener("beforeunload", () => { if (timer) flush(); });
 

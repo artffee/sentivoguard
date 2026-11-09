@@ -51,3 +51,6 @@ desktop.ini
 .claude/
 
 .vercel
+
+# Public verification key is safe to ship; never add a private key.
+!server/license-public.pem

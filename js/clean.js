@@ -75,20 +75,9 @@ SG.router.register("clean", function (view) {
         return;
       }
     }
-    // Fallback to the static mock list.
-    categories = SG.cleanCategories.map(c => ({
-      id:        c.id,
-      name:      c.name,
-      bytes:     parseMB(c.bytes) * 1024 * 1024,
-      display:   c.bytes,
-      available: true,
-      mock:      true
-    }));
-    if (!selected) {
-      selected = {};
-      SG.cleanCategories.forEach(c => { selected[c.id] = c.checked; });
-      SG.store.set("cleanSelected", selected);
-    }
+    categories = [];
+    selected = {};
+    alert('Cache information unavailable. No cleanup has been performed.');
     render();
   }
 
@@ -179,17 +168,7 @@ SG.router.register("clean", function (view) {
         await loadCategories();
       }
     } else {
-      // Mock path: drain visually for the demo
-      const reclaimed = recomputeTotal();
-      for (const c of categories) {
-        if (!selected[c.id]) continue;
-        await new Promise(r => setTimeout(r, 200));
-        c.bytes = 0;
-        c.display = "0 MB";
-      }
-      render();
-      SG.activity_log.log("ok", "✓",
-        "<b>SentivoClean</b> · MOCK · simulated reclaim of <b>" + formatBytes(reclaimed) + "</b>");
+      alert('Local service unavailable. No files were deleted.');
     }
 
     btn.disabled = false;
