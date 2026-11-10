@@ -23,10 +23,11 @@ async function refresh() {
   if (!me.authenticated) return me;
   $('identity').textContent = me.user.email;
   $('plan').textContent = me.license.tier.name;
-  $('verification').textContent = me.user.emailVerified ? 'Email verified.' : 'Verify your email before starting a subscription.';
+  $('verification').textContent = me.user.emailVerified ? 'Email verified.' : me.emailAvailable ? 'Verify your email before starting a subscription.' : 'Email verification and password-reset delivery are not available yet. Paid checkout remains closed.';
   $('verify').hidden = me.user.emailVerified;
   $('verify').disabled = !me.emailAvailable;
   $('download').hidden = !me.downloadAvailable;
+  $('download-status').textContent = me.downloadAvailable ? 'Windows beta download available.' : 'The updated Windows installer is being tested. Downloads are temporarily unavailable.';
   $('license').disabled = !me.licenseAvailable;
   $('portal').hidden = !me.billing.customer || !me.billing.portalAvailable;
   $('buy').disabled = !me.billing.available || !me.user.emailVerified || me.license.plan !== 'free';

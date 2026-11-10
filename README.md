@@ -37,7 +37,7 @@ The `devices` field describes the plan allowance; hardware binding is not implem
 npm run build:win
 ```
 
-The installer must contain the public verification key matching the production signing key. Never package a private key or website `.env` file. Windows installation, OS-specific tools and code signing must be validated on Windows before publishing. An unsigned development build is not a verified production release. Pass `-- --publish never` when making a local test build.
+Website downloads stay disabled until `SG_DOWNLOAD_ENABLED=true` and `SG_DOWNLOAD_URL` points to an approved installer. An old saved URL alone cannot enable downloads or checkout. The installer must contain the public verification key matching the production signing key. Never package a private key or website `.env` file. Windows installation, OS-specific tools and code signing must be validated on Windows before publishing. An unsigned development build is not a verified production release. Pass `-- --publish never` when making a local test build.
 
 For sandbox testing, prepare a separate source tree with the test server's public key:
 
@@ -54,7 +54,7 @@ Run `npm run check:config` in a securely configured server environment for a val
 
 ## Checks in this change
 
-- 50 Node tests cover account persistence, revocation, password reset, origin checks, billing reconciliation, checkout retries, webhook signatures, local API isolation, scan streaming, quarantine integrity, cancellation during sales pauses, test/live separation, desktop startup, sandbox staging and builder configuration.
+- 52 Node tests cover account persistence, revocation, password reset, origin checks, billing reconciliation, checkout retries, webhook signatures, local API isolation, scan streaming, quarantine integrity, cancellation during sales pauses, test/live separation, desktop startup, sandbox staging and builder configuration.
 - JavaScript syntax checks run in GitHub Actions alongside the tests.
 - CI also builds on Linux and Windows with publishing disabled, then tests the actual packaged backend using `npm run test:packaged -- <unpacked-executable>`. This checks ASAR startup, authenticated API access, unlicensed monitoring rejection and a real fixture scan. It does not install the application or open its GUI, and it publishes no installer.
 - Production dependency audit: zero reported vulnerabilities at verification time.

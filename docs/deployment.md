@@ -30,6 +30,7 @@ The connected Stripe account is Orion Mind, live mode. No SentivoGuard product o
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for this project's exact `/api/billing/webhook` endpoint. |
 | `SG_LICENSE_PRIVATE_KEY` | Ed25519 PKCS#8 PEM. Production server only. |
 | `SG_LICENSE_PUBLIC_KEY` | Matching SPKI PEM; desktop also uses the bundled public PEM. |
+| `SG_DOWNLOAD_ENABLED` | Defaults to false. Set true only after approval of the installed, tested installer. New checkout also requires downloads to be enabled. |
 | `SG_DOWNLOAD_URL` | HTTPS URL of the tested new installer; the URL is shareable after download and is not itself an authorization boundary. |
 | `SG_BILLING_ENABLED` | Keep production `false` until the steps below pass and the owner approves. Pausing new sales does not disable existing customers' portal or webhook reconciliation. |
 
@@ -48,7 +49,7 @@ Never copy production keys into preview, development, GitHub Actions or the desk
 4. Verify signup, email delivery, verification, login in a second browser, reset and logout. Confirm price amount and billing cadence in hosted checkout. Confirm paid access is granted only after a verified webhook. Exercise duplicate/reordered events, an unpaid asynchronous checkout, failed renewal, cancellation at period end, immediate cancellation, partial/full refund, dispute and early fraud warning.
 5. First build the separate sandbox Windows installer described below and test the full payment-to-desktop flow. After sandbox sign-off, build the production candidate with the production public key. Test installation, scan, quarantine/restore, read-only Windows views, paid monitoring, vault, Nova key storage, paid-license activation and online renewal. Verify the three-day offline expiry and that explicit revocation disables monitoring. Review false positives before moving files.
 6. Review the existing commercial terms before sale: the repository still contains a governing-law placeholder, and the support address and refund process need owner verification. Ensure account deletion/data-access requests can be handled. No legal jurisdiction or tax registration is assumed here.
-7. Configure the equivalent live Stripe price, restricted key, customer portal and webhook at `https://sentivoguard.com/api/billing/webhook`. Upload the tested installer and update `SG_DOWNLOAD_URL`. Deploy with checkout disabled, verify login and download, then enable billing and redeploy. Only perform a live charge when specifically authorized.
+7. Configure the equivalent live Stripe price, restricted key, customer portal and webhook at `https://sentivoguard.com/api/billing/webhook`. Upload the tested installer, update `SG_DOWNLOAD_URL` and explicitly enable `SG_DOWNLOAD_ENABLED` after approval. Deploy with checkout disabled, verify login and download, then enable billing and redeploy. Only perform a live charge when specifically authorized.
 
 Stripe and the deployment must use the same mode. Signature failures return 400. Processing/storage failures return 503 so Stripe can retry. The event is marked complete only after successful reconciliation. Concurrent webhook processing uses a lease; an expired worker cannot delete a replacement lock.
 
@@ -64,7 +65,7 @@ Provider configuration has not been completed by these source changes. The inspe
 | Webhook | Register the exact test-host endpoint with the event list and API version above. Put that endpoint's signing secret into the test environment only. Verify it can reach the endpoint without a hosting login page; a protected Vercel preview is not automatically webhook-accessible. Do not reuse Orion Saint's webhook. |
 | Resend | Add/verify a sender domain or authorized subdomain for SentivoGuard. Publish the DNS records Resend supplies, including DKIM and its SPF/return-path records; do not invent records. Confirm verified status. Create a sending-only key scoped to that domain, set `RESEND_FROM`, and prove verification/reset messages arrive at owned test inboxes. |
 | Redis | Create a separate empty database with its own REST credentials. Test atomic EVAL, GETDEL, NX/EX leases and expiry on it. No production customer data should be copied. |
-| Test host | Use a separate HTTPS origin, test-only variables and separate signing pair. Keep the private key server-side. A sandbox checkout still requires a test installer URL in `SG_DOWNLOAD_URL`. Approval is required before creating/deploying this environment. |
+| Test host | Use a separate HTTPS origin, test-only variables and separate signing pair. Keep the private key server-side. A sandbox checkout still requires a test installer URL in `SG_DOWNLOAD_URL` and explicit `SG_DOWNLOAD_ENABLED=true` for the sandbox. Approval is required before creating/deploying this environment. |
 
 Run `node --env-file=/secure/path/to/test.env tools/readiness.js` locally after securely loading the settings. The report prints booleans only; it does not contact Stripe, Redis or Resend. Do not paste secret values into tickets, chat, logs, screenshots or Git.
 

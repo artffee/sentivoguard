@@ -8,6 +8,14 @@
     }
   },
   "public": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.sentivoguard.com" }],
+      "destination": "https://sentivoguard.com/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/",

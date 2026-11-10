@@ -23,7 +23,7 @@ process.env.SG_LICENSE_PUBLIC_KEY = keys.publicKey.export({type:'spki',format:'p
 process.env.SG_LICENSE_PRIVATE_KEY = keys.privateKey.export({type:'pkcs8',format:'pem'});
 Object.assign(process.env, {PUBLIC_ORIGIN:'https://sentivoguard.com', KV_REST_API_URL:'https://redis.invalid', KV_REST_API_TOKEN:'fixture',
   RESEND_API_KEY:'fixture', RESEND_FROM:'test@sentivoguard.com', STRIPE_SECRET_KEY:'rk_' + 'test_fixture', STRIPE_WEBHOOK_SECRET:'whsec_fixture', STRIPE_PRICE_STANDARD:'price_standard', STRIPE_PRICE_PLUS:'price_plus',
-  STRIPE_PRICE_ULTIMATE:'price_ultimate', SG_BILLING_ENABLED:'true', SG_DOWNLOAD_URL:'https://downloads.invalid/app.exe', SG_STRIPE_MODE:'test', STRIPE_PORTAL_CONFIGURATION:'bpc_fixture'});
+  STRIPE_PRICE_ULTIMATE:'price_ultimate', SG_BILLING_ENABLED:'true', SG_DOWNLOAD_ENABLED:'true', SG_DOWNLOAD_URL:'https://downloads.invalid/app.exe', SG_STRIPE_MODE:'test', STRIPE_PORTAL_CONFIGURATION:'bpc_fixture'});
 beforeEach(() => data.clear());
 async function account() { return U.signup('person@example.com','correct horse battery'); }
 function req(body = {}, cookie = '') { return {method:'POST',headers:{origin:process.env.PUBLIC_ORIGIN,'content-type':'application/json',cookie},body,socket:{remoteAddress:'127.0.0.1'}}; }
@@ -337,5 +337,29 @@ test('invalid canonical origins keep checkout and the customer portal unavailabl
     process.env.PUBLIC_ORIGIN=value;
     assert.throws(() => H.origin(), /service_unavailable/);
     assert.equal(B.ready(), false); assert.equal(B.portalReady(), false);
+  }
+});
+
+test('old installer URLs stay unavailable until release approval explicitly enables downloads', async t => {
+  const user=await account(); const cookie='sg_session='+await U.createSession(user);
+  environment(t,{SG_DOWNLOAD_ENABLED:undefined});
+  const request={method:'GET',headers:{cookie}};
+  const blocked=await invoke(require('../api/download'),request);
+  assert.equal(blocked.status,503); assert.equal(blocked.headers.location,undefined);
+  assert.equal((await invoke(require('../api/auth/me'),request)).body.downloadAvailable,false);
+  assert.equal(B.ready(),false);
+  process.env.SG_DOWNLOAD_ENABLED='true';
+  const enabled=await invoke(require('../api/download'),request);
+  assert.equal(enabled.status,302); assert.equal(enabled.headers.location,process.env.SG_DOWNLOAD_URL);
+  assert.equal((await invoke(require('../api/auth/me'),request)).body.downloadAvailable,true);
+  assert.equal((await invoke(require('../api/download'),{method:'GET',headers:{}})).status,401);
+});
+test('malformed, insecure or credential-bearing download URLs cannot enable checkout or redirects', async t => {
+  const user=await account(); const cookie='sg_session='+await U.createSession(user);
+  environment(t,{SG_DOWNLOAD_ENABLED:'true',SG_DOWNLOAD_URL:undefined});
+  for(const url of ['not a URL','http://downloads.invalid/app.exe','https://user:password@downloads.invalid/app.exe']) {
+    process.env.SG_DOWNLOAD_URL=url;
+    const r=await invoke(require('../api/download'),{method:'GET',headers:{cookie}});
+    assert.equal(r.status,503); assert.equal(r.headers.location,undefined); assert.equal(B.ready(),false);
   }
 });
