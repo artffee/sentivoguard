@@ -23,7 +23,7 @@ process.env.SG_LICENSE_PUBLIC_KEY = keys.publicKey.export({type:'spki',format:'p
 process.env.SG_LICENSE_PRIVATE_KEY = keys.privateKey.export({type:'pkcs8',format:'pem'});
 Object.assign(process.env, {PUBLIC_ORIGIN:'https://sentivoguard.com', KV_REST_API_URL:'https://redis.invalid', KV_REST_API_TOKEN:'fixture',
   RESEND_API_KEY:'fixture', RESEND_FROM:'test@sentivoguard.com', STRIPE_SECRET_KEY:'rk_' + 'test_fixture', STRIPE_WEBHOOK_SECRET:'whsec_fixture', STRIPE_PRICE_STANDARD:'price_standard', STRIPE_PRICE_PLUS:'price_plus',
-  STRIPE_PRICE_ULTIMATE:'price_ultimate', SG_BILLING_ENABLED:'true', SG_DOWNLOAD_URL:'https://downloads.invalid/app.exe'});
+  STRIPE_PRICE_ULTIMATE:'price_ultimate', SG_BILLING_ENABLED:'true', SG_DOWNLOAD_URL:'https://downloads.invalid/app.exe', SG_STRIPE_MODE:'test', STRIPE_PORTAL_CONFIGURATION:'bpc_fixture'});
 beforeEach(() => data.clear());
 async function account() { return U.signup('person@example.com','correct horse battery'); }
 function req(body = {}, cookie = '') { return {method:'POST',headers:{origin:process.env.PUBLIC_ORIGIN,'content-type':'application/json',cookie},body,socket:{remoteAddress:'127.0.0.1'}}; }
@@ -36,10 +36,12 @@ async function invoke(handler, request) {
 }
 function fakeStripe(user) {
   let calls = 0;
-  const sub = {id:'sub_fixture',created:100,customer:'cus_fixture',status:'active',items:{data:[{price:{id:'price_plus'},quantity:1,current_period_end:2000000000}]},
+  const sub = {id:'sub_fixture',livemode:false,created:100,customer:'cus_fixture',status:'active',items:{data:[{price:{id:'price_plus'},quantity:1,current_period_end:2000000000}]},
     latest_invoice:{id:'in_fixture',status:'paid',parent:{subscription_details:{subscription:'sub_fixture'}},lines:{data:[{pricing:{price_details:{price:'price_plus'}},period:{end:2000000000}}]}}};
-  const session = {id:'cs_fixture',customer:'cus_fixture',status:'complete',mode:'subscription',payment_status:'paid',subscription:sub.id,url:'https://checkout.stripe.com/test'};
-  return {sub,session,get calls(){return calls;},prices:{retrieve:async()=>({active:true,currency:'usd',unit_amount:4900,recurring:{interval:'year',interval_count:1}})},customers:{create:async()=>({id:'cus_fixture'})},subscriptions:{retrieve:async()=>{calls++;return copy(sub);}},
+  const session = {id:'cs_fixture',livemode:false,customer:'cus_fixture',status:'complete',mode:'subscription',payment_status:'paid',subscription:sub.id,url:'https://checkout.stripe.com/test'};
+  const portalConfig = {id:'bpc_fixture',active:true,livemode:false,features:{subscription_cancel:{enabled:true,mode:'at_period_end'},subscription_update:{enabled:false}}};
+  return {sub,session,portalConfig,get calls(){return calls;},prices:{retrieve:async()=>({active:true,livemode:false,currency:'usd',unit_amount:4900,recurring:{interval:'year',interval_count:1}})},customers:{create:async()=>({id:'cus_fixture',livemode:false})},subscriptions:{retrieve:async()=>{calls++;return copy(sub);}},
+    billingPortal:{configurations:{retrieve:async()=>copy(portalConfig)},sessions:{create:async params=>({url:'https://billing.stripe.com/test',...params})}},
     checkout:{sessions:{create:async()=>copy(session),retrieve:async()=>copy(session),expire:async()=>{}}},
     invoices:{retrieve:async()=>copy(sub.latest_invoice)},invoicePayments:{list:async()=>({data:[{invoice:'in_fixture'}]})},charges:{retrieve:async()=>({id:'ch_fixture',payment_intent:'pi_fixture'})}};
 }
@@ -172,7 +174,7 @@ test('checkout retries reuse one open session and its idempotency key', async()=
 });
 test('checkout rejects unintended prices, plans and duplicate active subscriptions',async()=>{
   const user=await billingUser(); const stripe=fakeStripe();
-  stripe.prices.retrieve=async()=>({active:true,currency:'usd',unit_amount:4900,recurring:{interval:'month',interval_count:1}});
+  stripe.prices.retrieve=async()=>({active:true,livemode:false,currency:'usd',unit_amount:4900,recurring:{interval:'month',interval_count:1}});
   await assert.rejects(()=>B.checkout(user,'plus',stripe),/billing_unavailable/);
   await assert.rejects(()=>B.checkout(user,'ultimate',stripe),/billing_unavailable/);
   await assert.rejects(()=>B.checkout({...user,billing:{subscription:'sub_existing',status:'past_due'}},'plus',stripe),/billing_already_active/);
@@ -199,4 +201,141 @@ test('mismatched signing keys keep license issuance and checkout unavailable',()
   process.env.SG_LICENSE_PUBLIC_KEY=crypto.generateKeyPairSync('ed25519').publicKey.export({type:'spki',format:'pem'});
   try { assert.equal(L.canIssue(),false);assert.equal(B.ready(),false); }
   finally { process.env.SG_LICENSE_PUBLIC_KEY=original; }
+});
+
+function environment(t, changes) {
+  const previous = Object.fromEntries(Object.keys(changes).map(key => [key, process.env[key]]));
+  for (const [key, value] of Object.entries(changes)) {
+    if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  }
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  });
+}
+test('checkout refuses absent or mismatched mode and live keys in preview before any Stripe operation', async t => {
+  const user = await billingUser();
+  environment(t, { SG_STRIPE_MODE: undefined, STRIPE_SECRET_KEY: 'rk_test_fixture', VERCEL_ENV: 'preview' });
+  for (const [mode, key] of [[undefined,'rk_test_fixture'], ['live','rk_test_fixture'], ['test','rk_live_fixture'], ['live','rk_live_fixture']]) {
+    if (mode) process.env.SG_STRIPE_MODE = mode; else delete process.env.SG_STRIPE_MODE;
+    process.env.STRIPE_SECRET_KEY = key;
+    assert.equal(B.ready(), false);
+    assert.throws(() => B.client(), /billing_unavailable/);
+    await assert.rejects(() => B.checkout(user, 'plus', {}), /billing_unavailable/);
+  }
+  process.env.SG_STRIPE_MODE = 'test'; process.env.STRIPE_SECRET_KEY = 'rk_test_fixture';
+  assert.equal(B.ready(), true);
+});
+test('checkout rejects a price from the wrong Stripe mode before creating a session', async () => {
+  const stripe = fakeStripe(); const user = await billingUser(); let creates = 0;
+  const price = await stripe.prices.retrieve(); price.livemode = true;
+  stripe.prices.retrieve = async () => price;
+  stripe.checkout.sessions.create = async () => { creates++; return stripe.session; };
+  await assert.rejects(() => B.checkout(user, 'plus', stripe), /billing_unavailable/);
+  assert.equal(creates, 0);
+});
+test('customers can open the configured cancellation portal while new sales and email are disabled', async t => {
+  const user = await billingUser(); const stripe = fakeStripe();
+  const cookie = 'sg_session=' + await U.createSession(user);
+  environment(t, { SG_BILLING_ENABLED: 'false', RESEND_API_KEY: undefined, SG_LICENSE_PRIVATE_KEY: undefined, SG_DOWNLOAD_URL: undefined });
+  assert.equal(B.ready(), false); assert.equal(B.portalReady(), true);
+  const original = B.portal; B.portal = customer => original(customer, stripe); t.after(() => { B.portal = original; });
+  let requested;
+  stripe.billingPortal.sessions.create = async params => { requested = params; return {url:'https://billing.stripe.com/test'}; };
+  const r = await invoke(require('../api/billing/portal'), req({}, cookie));
+  assert.equal(r.status, 200); assert.equal(requested.customer, user.stripeCustomer);
+  assert.equal(requested.configuration, process.env.STRIPE_PORTAL_CONFIGURATION);
+  assert.equal(requested.return_url, process.env.PUBLIC_ORIGIN + '/members');
+  assert.equal((await invoke(require('../api/billing/portal'), req())).status, 401);
+  const me = await invoke(require('../api/auth/me'), {method:'GET',headers:{cookie}});
+  assert.equal(me.body.billing.available, false); assert.equal(me.body.billing.portalAvailable, true);
+});
+test('portal rejects disabled cancellation, immediate cancellation, unsupported upgrades and wrong mode', async () => {
+  const user = await billingUser();
+  for (const change of [c => {c.active=false;}, c => {c.features.subscription_cancel.enabled=false;}, c => {c.features.subscription_cancel.mode='immediately';}, c => {c.features.subscription_update.enabled=true;}, c => {c.livemode=true;}]) {
+    const stripe = fakeStripe(); change(stripe.portalConfig); let creates = 0;
+    stripe.billingPortal.sessions.create = async () => { creates++; };
+    await assert.rejects(() => B.portal(user, stripe), /billing_unavailable/);
+    assert.equal(creates, 0);
+  }
+});
+test('an ended subscription allows a new checkout with a fresh idempotency key', async () => {
+  const user = await billingUser(); const stripe = fakeStripe();
+  const key = 'checkout:' + U.digest(user.email);
+  for (const status of ['canceled', 'incomplete_expired']) {
+    stripe.sub.status = status;
+    await store.set(key, {session:'cs_old',plan:'plus',attempt:'previous'});
+    let attempt;
+    stripe.checkout.sessions.create = async (_, options) => { attempt = options.idempotencyKey; return {...stripe.session,id:'cs_new',status:'open'}; };
+    assert.equal((await B.checkout({...user,billing:{subscription:stripe.sub.id,status}}, 'plus', stripe)).id, 'cs_new');
+    assert.notEqual(attempt, 'sg-checkout-previous');
+    assert.equal((await store.get(key)).session, 'cs_new');
+  }
+});
+test('a delayed webhook cannot allow a second purchase while Stripe still has a nonterminal subscription', async () => {
+  const user = await billingUser(); const stripe = fakeStripe(); let creates = 0;
+  await store.set('checkout:' + U.digest(user.email), {session:'cs_old',plan:'plus',attempt:'previous'});
+  stripe.checkout.sessions.create = async () => { creates++; return stripe.session; };
+  for (const status of ['active', 'past_due', 'unpaid', 'incomplete', 'trialing', 'paused']) {
+    stripe.sub.status = status;
+    await assert.rejects(() => B.checkout(user, 'plus', stripe), /billing_already_active/);
+  }
+  assert.equal(creates, 0);
+});
+test('cached checkout and subscription must belong to the signed-in customer', async () => {
+  const user = await billingUser(); const stripe = fakeStripe();
+  await store.set('checkout:' + U.digest(user.email), {session:'cs_old',plan:'plus'});
+  stripe.session.customer = 'cus_someone_else';
+  await assert.rejects(() => B.checkout(user, 'plus', stripe), /billing_unavailable/);
+  stripe.session.customer = user.stripeCustomer; stripe.sub.customer = 'cus_someone_else'; stripe.sub.status = 'canceled';
+  await assert.rejects(() => B.checkout(user, 'plus', stripe), /billing_unavailable/);
+});
+test('checkout rereads account state after acquiring the lease', async t => {
+  const user = await billingUser(); const cookie = 'sg_session=' + await U.createSession(user);
+  const originalCreate = store.create, originalCheckout = B.checkout;
+  store.create = async (key, value, ...args) => {
+    const result = await originalCreate(key, value, ...args);
+    if (key.startsWith('checkout-lock:')) await U.updateUser(user.email, {billing:{subscription:'sub_just_paid',status:'active'}});
+    return result;
+  };
+  B.checkout = customer => originalCheckout(customer, 'plus', fakeStripe());
+  t.after(() => { store.create=originalCreate; B.checkout=originalCheckout; });
+  const r = await invoke(require('../api/checkout'), req({plan:'plus'}, cookie));
+  assert.equal(r.body.error, 'billing_already_active');
+  assert.equal(await store.get('checkout-lock:' + U.digest(user.email)), null);
+});
+test('validly signed live webhook is rejected by a test deployment without marking it complete', async t => {
+  const Stripe = require('stripe'); const sdk = new Stripe('rk_test_fixture');
+  const original = B.client; B.client = () => sdk; t.after(() => {B.client=original;});
+  const payload = JSON.stringify({id:'evt_wrongmode',livemode:true,type:'invoice.paid',data:{object:{}}});
+  const r = Readable.from([Buffer.from(payload)]); r.method='POST';
+  r.headers={'stripe-signature':sdk.webhooks.generateTestHeaderString({payload,secret:process.env.STRIPE_WEBHOOK_SECRET})};
+  const result = await invoke(require('../api/billing/webhook'), r);
+  assert.equal(result.status, 400); assert.equal(result.body.error, 'mode_mismatch');
+  assert.equal(await store.get('stripe-event:evt_wrongmode'), null);
+});
+test('license issuer and verifier both enforce the three-day maximum', () => {
+  const now = Math.floor(Date.now()/1000);
+  assert.throws(() => L.issue({email:'person@example.com',plan:'plus',expires:now+4*86400}), /expired/);
+  const parts = L.issue({email:'person@example.com',plan:'plus'}).split('.');
+  const payload = JSON.parse(Buffer.from(parts[1], 'base64url')); payload.exp = payload.iat + 4*86400;
+  parts[1] = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  parts[2] = crypto.sign(null, Buffer.from(parts[0]+'.'+parts[1]), keys.privateKey).toString('base64url');
+  assert.equal(L.verify(parts.join('.')).ok, false);
+});
+test('desktop rejects licenses signed by an environment override instead of its bundled key', t => {
+  const token = L.issue({email:'person@example.com',plan:'plus'});
+  assert.equal(L.verify(token).ok, true);
+  environment(t, {SG_DESKTOP_BUILD:'true'});
+  assert.equal(L.verify(token).ok, false);
+  assert.equal(L.canIssue(), false);
+});
+test('invalid canonical origins keep checkout and the customer portal unavailable', t => {
+  environment(t, {PUBLIC_ORIGIN:process.env.PUBLIC_ORIGIN});
+  for (const value of ['https://sentivoguard.com/path', 'https://user:password@sentivoguard.com', 'http://sentivoguard.com', 'https://sentivoguard.com/?q=1']) {
+    process.env.PUBLIC_ORIGIN=value;
+    assert.throws(() => H.origin(), /service_unavailable/);
+    assert.equal(B.ready(), false); assert.equal(B.portalReady(), false);
+  }
 });

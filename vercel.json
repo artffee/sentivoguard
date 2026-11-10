@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
+  "git": {
+    "deploymentEnabled": {
+      "fix/security-and-stripe": false,
+      "improve/release-readiness": false
+    }
+  },
   "public": true,
   "rewrites": [
     {

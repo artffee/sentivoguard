@@ -12,7 +12,10 @@ module.exports = H.endpoint(async (req, res) => {
   if (!await store.create(lock, owner, 300)) return H.json(res, 409, { ok: false, error: 'checkout_in_progress' });
   let session;
   try {
-    session = await billing.checkout(user, H.body(req).plan);
+    // Refresh inside the lease; a webhook may have updated the account while
+    // this request was authenticating or acquiring the lock.
+    const current = await H.requireUser(req);
+    session = await billing.checkout(current, H.body(req).plan);
   } finally { await store.release(lock, owner); }
   H.json(res, 200, { ok: true, url: session.url });
 });

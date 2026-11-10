@@ -9,6 +9,6 @@ module.exports = H.endpoint(async (req, res) => {
   H.json(res, 200, { ok: true, authenticated: !!user, crossDeviceLogin: U.storeConfigured(),
     user: user ? { email: user.email, createdAt: user.createdAt, emailVerified: !!user.emailVerified } : null,
     license: user ? billing.context(user) : null,
-    billing: { available: billing.ready(), customer: !!user?.stripeCustomer, status: user?.billing?.status || null, suspended: !!user?.billing?.suspended },
+    billing: { available: billing.ready(), portalAvailable: billing.portalReady(), customer: !!user?.stripeCustomer, status: user?.billing?.status || null, suspended: !!user?.billing?.suspended },
     emailAvailable: email.configured(), licenseAvailable: L.canIssue(), downloadAvailable: !!process.env.SG_DOWNLOAD_URL });
 });

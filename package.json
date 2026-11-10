@@ -1,6 +1,6 @@
 {
   "name": "sentivoguard",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "SentivoGuard \u2014 Windows security companion",
   "main": "main.js",
   "author": "SentivoGuard",
@@ -13,7 +13,10 @@
     "build:mac": "electron-builder --mac",
     "build:dir": "electron-builder --dir",
     "test": "node --test tests/*.test.js",
-    "check": "node tools/check.js"
+    "check": "node tools/check.js",
+    "check:config": "node tools/readiness.js",
+    "stage:sandbox": "node tools/stage-sandbox.js",
+    "test:packaged": "node tools/smoke-packaged.js"
   },
   "build": {
     "appId": "com.sentivoguard.app",
@@ -27,6 +30,8 @@
       "styles/**",
       "js/**",
       "server/**",
+      "desktop/**",
+      "desktop-release.json",
       "assets/**",
       "package.json",
       "!server/*private*",
@@ -44,7 +49,7 @@
           ]
         }
       ],
-      "publisherName": "SentivoGuard"
+      "icon": "assets/icon.ico"
     },
     "mac": {
       "target": "dmg",

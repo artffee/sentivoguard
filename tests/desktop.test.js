@@ -33,6 +33,8 @@ test('local API rejects missing credentials, foreign origins, and DNS rebinding'
   assert.equal((await request('/api/health',{headers:{cookie,host:'evil.invalid'}})).status,403);
   assert.equal((await request('/api/health',{headers:{cookie,'sec-fetch-site':'cross-site'}})).status,403);
   const r=await request('/api/health',{headers:{cookie}});assert.equal(r.headers['access-control-allow-origin'],undefined);
+  assert.equal(JSON.parse(r.body).version,require('../package.json').version);
+  assert.equal(JSON.parse(r.body).channel,require('../desktop-release.json').channel);
 });
 test('local static server hides source, secrets and path traversal',async()=>{
   for(const p of ['/.env','/.server.js','/server/license.js','/package.json','/styles/%2e%2e/%2e%2e/package.json'])assert.equal((await request(p)).status,404);

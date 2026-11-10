@@ -28,7 +28,7 @@ async function refresh() {
   $('verify').disabled = !me.emailAvailable;
   $('download').hidden = !me.downloadAvailable;
   $('license').disabled = !me.licenseAvailable;
-  $('portal').hidden = !me.billing.customer || !me.billing.available;
+  $('portal').hidden = !me.billing.customer || !me.billing.portalAvailable;
   $('buy').disabled = !me.billing.available || !me.user.emailVerified || me.license.plan !== 'free';
   $('buy').textContent = me.billing.available ? 'Subscribe with Stripe · $49/year' : 'Checkout unavailable';
   $('checkout-status').textContent = me.billing.available ? 'Secure Stripe checkout. Manage renewal and cancellation from your account.' : 'Subscriptions open after payment and license setup is complete.';

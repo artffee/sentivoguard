@@ -28,7 +28,11 @@ const { scanDisk, quickScanPaths } = require("./server/scanner-disk");
 const Q   = require("./server/quarantine");
 const VT  = require("./server/tool-virustotal");
 const W   = require("./server/tool-watcher");
+// Desktop verification always uses the bundled public key, even if the shell
+// happens to contain website signing variables.
+process.env.SG_DESKTOP_BUILD = 'true';
 const L   = require("./server/license");
+const RELEASE = require('./server/release-config').load();
 const OS_ = require("./server/tool-os");
 
 // Start the real-time watcher daemon as soon as the server boots.
@@ -105,7 +109,8 @@ async function api(req, res, pathname) {
         ok:       true,
         platform: process.platform,
         node:     process.version,
-        version:  "2.1.0",
+        version: require('./package.json').version,
+        channel: RELEASE.channel,
         capabilities: {
           connections:      process.platform === "win32",
           clean:            true,
@@ -207,8 +212,9 @@ async function api(req, res, pathname) {
       // use is limited by the locally verified expiry; an explicit revocation wins.
       if (r.ok && r.payload.plan !== 'free') {
         try {
-          const response = await fetch('https://sentivoguard.com/api/license/verify', {
+          const response = await fetch(RELEASE.licenseOrigin + '/api/license/verify', {
             method: 'POST', signal: AbortSignal.timeout(5000),
+            redirect: 'error',
             headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token })
           });
           if (response.status === 401 || response.status === 403) {

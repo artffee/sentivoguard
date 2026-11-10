@@ -242,7 +242,7 @@ SG.router.register("settings", function (view) {
     settingRow("Email",        SG.user.email),
     settingRow("Plan",         SG.user.plan + " · $" + (SG.user.plan === "Plus" ? 49 : SG.user.plan === "Ultimate" ? 99 : SG.user.plan === "Standard" ? 29 : 0) + "/yr"),
     settingRow("Devices",      String(SG.user.devices) + " of " + (SG.user.plan === "Ultimate" ? "unlimited" : SG.user.plan === "Plus" ? "5" : "3")),
-    settingRow("App version",  "2.1.0"),
+    settingRow("App version", SG.backend.state.version || window.sentivo?.appVersion || 'Unavailable'),
 
     el("div", { style: "display:flex; gap:8px; margin-top: 14px;" },
       el("button", { class: "btn btn-ghost" }, "Manage billing"),

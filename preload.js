@@ -14,5 +14,5 @@ contextBridge.exposeInMainWorld("sentivo", {
   onNav: (cb) => ipcRenderer.on("nav", (_e, route) => cb(route)),
 
   platform:   process.platform,
-  appVersion: "2.1.0"
+  appVersion: process.argv.find(arg => arg.startsWith('--sg-app-version='))?.slice('--sg-app-version='.length) || 'unknown'
 });

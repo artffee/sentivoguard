@@ -113,7 +113,7 @@ SG.license = (function () {
     applyToUser();
     document.querySelector('.user-name').textContent = SG.user.licensed ? SG.user.email : 'Local account';
     document.querySelector('.user-plan').textContent = SG.user.plan;
-    document.querySelector('.brand-sub').textContent = SG.user.plan + ' · v2.2';
+    document.querySelector('.brand-sub').textContent = SG.user.plan + ' · v' + (SG.backend.state.version || 'unknown');
   }
   setInterval(async () => {
     const stored = SG.store.get('license', null);

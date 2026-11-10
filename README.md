@@ -21,7 +21,7 @@ Nova runs through Electron's main process with a user-provided Anthropic key sto
 
 Vercel serves the public pages and Node API routes. Accounts require Redis; there is no cookie-only fallback. Passwords are scrypt-hashed. Browser cookies contain random session tokens, never password hashes. Email verification and password reset use expiring, single-use links.
 
-The members page offers Plus at $49 USD/year through hosted Stripe Checkout. Checkout is disabled until configuration is complete and `SG_BILLING_ENABLED=true`. Webhooks verify signatures, reconcile current subscriptions and grant access only for paid coverage. A redirect to the success page cannot grant a license. The Stripe customer portal handles subscription management.
+The members page offers Plus at $49 USD/year through hosted Stripe Checkout. Checkout is disabled until configuration is complete and `SG_BILLING_ENABLED=true`. An explicit `SG_STRIPE_MODE` must match the restricted key; live keys are rejected in Vercel previews and development. Webhooks verify signatures, reconcile current subscriptions and grant access only for paid coverage. A redirect to the success page cannot grant a license. The explicitly configured Stripe customer portal remains available to existing customers when new sales are disabled.
 
 See [deployment and migration](docs/deployment.md) for required settings, webhook events, test cases and remaining release work. `.env.example` lists variable names without credentials. Put secrets in Vercel's sensitive environment settings, never in Git or desktop packages.
 
@@ -37,12 +37,26 @@ The `devices` field describes the plan allowance; hardware binding is not implem
 npm run build:win
 ```
 
-The installer must contain the public verification key matching the production signing key. Never package a private key or website `.env` file. Windows installation, OS-specific tools and code signing must be validated on Windows before publishing. An unsigned development build is not a verified production release.
+The installer must contain the public verification key matching the production signing key. Never package a private key or website `.env` file. Windows installation, OS-specific tools and code signing must be validated on Windows before publishing. An unsigned development build is not a verified production release. Pass `-- --publish never` when making a local test build.
+
+For sandbox testing, prepare a separate source tree with the test server's public key:
+
+```sh
+npm run stage:sandbox -- https://YOUR-TEST-HOST /absolute/path/test-public.pem
+cd out/sandbox-source
+npm ci
+npm run build:win -- --publish never
+```
+
+The staging command also works from a source ZIP. It refuses the production key or origin and gives the sandbox a separate app identity, data directory and loopback port. It copies only source files and the public key; it does not configure providers or deploy. The production desktop stays pinned to `https://sentivoguard.com`. The backend starts from a real user-data directory, including when its code lives inside `app.asar`.
+
+Run `npm run check:config` in a securely configured server environment for a value-free readiness report. It checks local settings only; successful diagnostics do not prove provider configuration or sandbox payments.
 
 ## Checks in this change
 
-- 30 Node tests cover account persistence, revocation, password reset, origin checks, billing reconciliation, checkout retries, webhook signatures, local API isolation, scan streaming and quarantine integrity.
+- 50 Node tests cover account persistence, revocation, password reset, origin checks, billing reconciliation, checkout retries, webhook signatures, local API isolation, scan streaming, quarantine integrity, cancellation during sales pauses, test/live separation, desktop startup, sandbox staging and builder configuration.
 - JavaScript syntax checks run in GitHub Actions alongside the tests.
+- CI also builds on Linux and Windows with publishing disabled, then tests the actual packaged backend using `npm run test:packaged -- <unpacked-executable>`. This checks ASAR startup, authenticated API access, unlicensed monitoring rejection and a real fixture scan. It does not install the application or open its GUI, and it publishes no installer.
 - Production dependency audit: zero reported vulnerabilities at verification time.
 
 Tests use disposable keys and a mocked Redis/Stripe boundary. They do not establish a completed Stripe payment, production email delivery, Windows installer compatibility, or complete malware detection.

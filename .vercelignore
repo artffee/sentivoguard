@@ -26,6 +26,9 @@ assets/
 .server.js
 main.js
 preload.js
+desktop/
+desktop-release.json
+server/release-config.js
 index.html
 
 # OS / editor cruft

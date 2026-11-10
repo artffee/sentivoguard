@@ -1,7 +1,7 @@
 // SentivoGuard — Electron main process.
 //
 // Architecture:
-//   1. Spawn the existing .server.js as a child process on a free port.
+//   1. Spawn .server.js on a dedicated loopback port.
 //   2. Wait for /api/health to respond.
 //   3. Load the renderer at http://127.0.0.1:<port>/ — same-origin /api/* fetches
 //      "just work" without any URL rewrites in the renderer.
@@ -11,17 +11,19 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, shell, dialog, safeStorage } = require("electron");
 const path  = require("path");
 const fs    = require("fs");
-const http  = require("http");
 const { spawn } = require("child_process");
+const backend = require('./desktop/backend');
+const release = require('./server/release-config').load();
 
 const LOCAL_TOKEN = require("crypto").randomBytes(32).toString("hex");
-const SG_PORT = 41730;        // dedicated port to avoid clashing with `node .server.js`
+const SG_PORT = release.channel === 'sandbox' ? 41731 : 41730;
 const HEALTH_TIMEOUT_MS = 15_000;
 
 let win        = null;
 let tray       = null;
 let backendCh  = null;
 let quitting   = false;
+let backendReady = false;
 
 // ─── Single-instance lock ──────────────────────────────────────────
 if (!app.requestSingleInstanceLock()) {
@@ -45,23 +47,19 @@ function spawnBackend() {
     return null;
   }
 
-  const child = spawn(process.execPath, [serverScript], {
-    cwd: __dirname,
-    env: Object.assign({}, process.env, {
-      SG_PORT: String(SG_PORT),
-      SG_LOCAL_TOKEN: LOCAL_TOKEN,
-      SG_LICENSE_PRIVATE_KEY: "",
-      SG_LICENSE_SECRET: "",
-      ELECTRON_RUN_AS_NODE: "1"   // run the backend as plain Node, not Electron
-    }),
-    stdio: ["ignore", "pipe", "pipe"]
+  const launch = backend.launchOptions({ root: __dirname, userData: app.getPath('userData'), port: SG_PORT, token: LOCAL_TOKEN, channel: release.channel });
+  const child = spawn(process.execPath, [launch.script], launch.options);
+  // Startup errors are also observed by waitForBackend. Keep a listener after
+  // startup so a process error can never become an unhandled EventEmitter error.
+  child.on('error', () => {
+    if (backendReady && !quitting) dialog.showErrorBox('SentivoGuard backend stopped', 'Restart the application. Monitoring is unavailable until the service starts.');
   });
 
   child.stdout.on("data", (d) => process.stdout.write("[backend] " + d));
   child.stderr.on("data", (d) => process.stderr.write("[backend!] " + d));
   child.on("exit", (code, sig) => {
     console.log("[backend] exited code=" + code + " sig=" + sig);
-    if (!quitting && code !== 0) {
+    if (!quitting && backendReady) {
       // Crashed unexpectedly — surface to user.
       dialog.showErrorBox("SentivoGuard backend stopped",
         "The background service exited unexpectedly (code " + code + "). " +
@@ -72,26 +70,6 @@ function spawnBackend() {
   return child;
 }
 
-function waitForBackend() {
-  const deadline = Date.now() + HEALTH_TIMEOUT_MS;
-  return new Promise((resolve, reject) => {
-    const tick = () => {
-      const req = http.get({ hostname: "127.0.0.1", port: SG_PORT, path: "/api/health", headers: { "x-sg-local-token": LOCAL_TOKEN } }, (res) => {
-        if (res.statusCode === 200) { res.resume(); return resolve(); }
-        res.resume();
-        retry();
-      });
-      req.on("error", retry);
-      req.setTimeout(800, () => { req.destroy(); retry(); });
-    };
-    const retry = () => {
-      if (Date.now() > deadline) return reject(new Error("backend health timeout"));
-      setTimeout(tick, 250);
-    };
-    tick();
-  });
-}
-
 // ─── Window + Tray ─────────────────────────────────────────────────
 function createWindow() {
   win = new BrowserWindow({
@@ -100,14 +78,15 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 700,
     backgroundColor: "#0a0f0c",
-    title: "SentivoGuard",
+    title: release.channel === 'sandbox' ? 'SentivoGuard Sandbox' : 'SentivoGuard',
     icon: pickIcon(),
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      additionalArguments: ['--sg-app-version=' + app.getVersion()]
     }
   });
 
@@ -175,7 +154,8 @@ app.whenReady().then(async () => {
   if (!backendCh) return;
 
   try {
-    await waitForBackend();
+    await backend.waitForBackend(backendCh, { port: SG_PORT, token: LOCAL_TOKEN, timeout: HEALTH_TIMEOUT_MS });
+    backendReady = true;
   } catch (e) {
     dialog.showErrorBox("SentivoGuard couldn't start",
       "The background service didn't respond in time.\n\n" + e.message);
