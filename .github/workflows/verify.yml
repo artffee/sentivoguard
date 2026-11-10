@@ -1,0 +1,44 @@
+name: Verify SentivoGuard
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm test
+  package:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node node_modules/electron/install.js
+      - if: runner.os == 'Linux'
+        run: npm run build:dir -- --linux --publish never
+      - if: runner.os == 'Windows'
+        run: npm run build:win -- --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - if: runner.os == 'Linux'
+        run: npm run test:packaged -- dist/linux-unpacked/sentivoguard
+      - if: runner.os == 'Windows'
+        run: npm run test:packaged -- "dist/win-unpacked/SentivoGuard.exe"
+      # Building and running the backend is not an installed Windows release.
+      # Do not publish or upload a customer installer from this verification job.

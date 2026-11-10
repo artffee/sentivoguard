@@ -21,7 +21,9 @@ SG.router = {
 
     const view = document.getElementById("view");
     view.innerHTML = "";
-    render(view);
+    if (!SG.backend.isReal() && !['dashboard', 'settings', 'vpn', 'nova'].includes(name)) {
+      view.append(SG.el('p', {class:'card'}, 'Local service unavailable. Restart the desktop application to use this tool.'));
+    } else render(view);
     view.scrollTop = 0;
     if (history.replaceState) history.replaceState(null, "", "#" + name);
   }

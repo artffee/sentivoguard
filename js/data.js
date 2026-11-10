@@ -209,45 +209,11 @@ SG.connections = [
 
 // ─── Mutable state (hydrated from store) ──────────────────────────────────
 
-const userDefault = {
-  email: "usivaylo@gmail.com",
-  plan: "Plus",
-  devices: 5,
-  novaTokensUsed: 0,
-  novaTokensLimit: 1_000_000
-};
-SG.user = SG.store.get("user", userDefault);
+const userDefault = { email: '', plan: 'Free', devices: 1, novaTokensUsed: 0, novaTokensLimit: 0 };
+SG.user = SG.store.get('user', userDefault);
+SG.vpnState = { connected: false, killSwitch: false };
 
-const vpnDefault = {
-  connected: true,
-  server: "Frankfurt",
-  serverCode: "DE-03",
-  ip: "185.180.12.241",
-  protocol: "WireGuard",
-  encryption: "AES-256-GCM",
-  uptime: "1h 47m",
-  upload: "12.4 MB",
-  download: "187.2 MB",
-  killSwitch: true,
-  splitTunnel: false,
-  customDns: true,
-  autoConnect: true,
-  blockIPv6: true
-};
-SG.vpnState = SG.store.get("vpnState", vpnDefault);
-
-const vaultDefault = [
-  { id: 1,  site: "GitHub",          url: "github.com",            user: "usivaylo",       pass: "K9#pLm2$xQv!nR8", strength: 95 },
-  { id: 2,  site: "Anthropic",       url: "console.anthropic.com", user: "usivaylo@gmail.com", pass: "F7@nT4!yZx#mB6q", strength: 92 },
-  { id: 3,  site: "Stripe",          url: "dashboard.stripe.com",  user: "u@sentivoguard.com", pass: "P3$wQz7!eR2#aV9", strength: 90 },
-  { id: 4,  site: "AWS",             url: "console.aws.amazon.com",user: "sentivo-prod",   pass: "M8&hN5#kL1@dC4r", strength: 88 },
-  { id: 5,  site: "Cloudflare",      url: "dash.cloudflare.com",   user: "usivaylo@gmail.com", pass: "R6%bV9!xT3$gH7w", strength: 86 },
-  { id: 6,  site: "Netlify",         url: "app.netlify.com",       user: "usivaylo",       pass: "Z2!cF8#nQ4@mB1v", strength: 84 },
-  { id: 7,  site: "DigitalOcean",    url: "cloud.digitalocean.com",user: "u@sentivo.com",  pass: "L5@dG2!fP7#wC9j", strength: 82 },
-  { id: 8,  site: "Twitter / X",     url: "x.com",                 user: "@sentivoguard",  pass: "letmein2024",     strength: 18 },
-  { id: 9,  site: "Bank of America", url: "bankofamerica.com",     user: "user_4421",      pass: "X7!vK3#nQ8$wT2c", strength: 91 },
-  { id: 10, site: "Reddit",          url: "reddit.com",            user: "u/sentivoguard", pass: "Hunter2!",        strength: 32 }
-];
+const vaultDefault = [];
 SG.vaultItems = SG.store.get("vaultItems", vaultDefault);
 
 const cleanDefault = [
@@ -266,13 +232,7 @@ const cleanDefault = [
 ];
 SG.cleanCategories = SG.store.get("cleanCategories", cleanDefault);
 
-const activityDefault = [
-  { type: "ok",     icon: "✓", msg: "<b>Instinct Scanner</b> finished folder audit · CLEAN", ts: Date.now() - 14*60_000,    time: "14m ago" },
-  { type: "warn",   icon: "!", msg: "<b>SentivoBlock</b> blocked <b>doubleclick.net</b> tracker", ts: Date.now() - 23*60_000, time: "23m ago" },
-  { type: "info",   icon: "↓", msg: "<b>Shield VPN</b> reconnected to <b>Frankfurt (DE-03)</b>", ts: Date.now() - 60*60_000, time: "1h ago" },
-  { type: "danger", icon: "X", msg: "<b>SentivoWatch</b> flagged outbound to <b>45.227.253.99</b> (Romania)", ts: Date.now() - 2*60*60_000, time: "2h ago" },
-  { type: "ok",     icon: "✓", msg: "<b>SentivoVault</b> auto-filled credentials for <b>github.com</b>", ts: Date.now() - 3*60*60_000, time: "3h ago" }
-];
+const activityDefault = [];
 SG.activity = SG.store.get("activity", activityDefault);
 
 // Convenience: persist any of the named mutable slots after a mutation.

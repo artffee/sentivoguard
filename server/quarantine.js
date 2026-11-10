@@ -14,7 +14,7 @@ const path   = require("path");
 const os     = require("os");
 const crypto = require("crypto");
 
-const ROOT_DIR        = path.join(os.homedir(), ".sentivoguard");
+const ROOT_DIR        = process.env.SG_DATA_DIR || path.join(os.homedir(), ".sentivoguard");
 const QUARANTINE_DIR  = path.join(ROOT_DIR, "quarantine");
 const MANIFEST_PATH   = path.join(ROOT_DIR, "manifest.json");
 
@@ -33,6 +33,8 @@ const FORBIDDEN_PREFIXES = [
 ];
 
 function isQuarantineSafe(absPath) {
+  if (absPath === ROOT_DIR || absPath.startsWith(ROOT_DIR + path.sep)) return false;
+  if (process.platform !== 'win32' && /^\/(?:bin|sbin|usr|etc|boot|dev|proc|sys|lib)(?:\/|$)/.test(absPath)) return false;
   const norm = absPath.replace(/\//g, "\\");
   for (const rx of FORBIDDEN_PREFIXES) {
     if (rx.test(norm)) return false;
@@ -60,7 +62,9 @@ function loadManifest() {
 
 function saveManifest(m) {
   ensureDirs();
-  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(m, null, 2));
+  const tmp = MANIFEST_PATH + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(m, null, 2), { mode: 0o600 });
+  fs.renameSync(tmp, MANIFEST_PATH);
 }
 
 // ─── Hashing ───────────────────────────────────────────────────────
@@ -78,7 +82,9 @@ function sha256File(filePath) {
 // ─── Operations ────────────────────────────────────────────────────
 
 async function quarantineOne(absPath, reason = "", finding = null) {
+  if (typeof absPath !== 'string' || !path.isAbsolute(absPath)) return { ok: false, error: 'invalid_path' };
   const norm = path.resolve(absPath);
+  try { if (fs.lstatSync(norm).isSymbolicLink() || !isQuarantineSafe(fs.realpathSync(norm))) return { ok:false, error:'forbidden_location' }; } catch {}
 
   if (!fs.existsSync(norm))      return { ok: false, error: "not_found",         path: norm };
   if (!isQuarantineSafe(norm))   return { ok: false, error: "forbidden_location", path: norm };
@@ -159,9 +165,9 @@ async function restoreOne(id, opts = {}) {
   if (!fs.existsSync(item.quarantinePath))
     return { ok: false, error: "quarantine_file_missing" };
 
-  // Integrity check (skippable via opts.force).
+  // Integrity checks cannot be bypassed.
   const hash = await sha256File(item.quarantinePath);
-  if (!opts.force && hash !== item.sha256) {
+  if (hash !== item.sha256) {
     return { ok: false, error: "hash_mismatch", expected: item.sha256, actual: hash };
   }
 
@@ -170,6 +176,11 @@ async function restoreOne(id, opts = {}) {
              detail: "A file already exists at " + item.originalPath };
   }
 
+  if (!isQuarantineSafe(item.originalPath)) return { ok: false, error: 'forbidden_location' };
+  try {
+    const parent = fs.realpathSync(path.dirname(item.originalPath));
+    if (!isQuarantineSafe(parent)) return { ok: false, error: 'forbidden_location' };
+  } catch {}
   // Make sure parent directory still exists.
   try { fs.mkdirSync(path.dirname(item.originalPath), { recursive: true }); } catch {}
 
@@ -255,15 +266,21 @@ function isWhitelisted(absPath) {
   return false;
 }
 
+let mutation = Promise.resolve();
+const serial = fn => (...args) => {
+  const result = mutation.then(() => fn(...args));
+  mutation = result.catch(() => {});
+  return result;
+};
 module.exports = {
-  quarantineOne,
-  quarantineMany,
-  restoreOne,
-  deleteOne,
+  quarantineOne: serial(quarantineOne),
+  quarantineMany: serial(quarantineMany),
+  restoreOne: serial(restoreOne),
+  deleteOne: serial(deleteOne),
   list,
   whitelistList,
-  whitelistAdd,
-  whitelistRemove,
+  whitelistAdd: serial(whitelistAdd),
+  whitelistRemove: serial(whitelistRemove),
   isWhitelisted,
   isQuarantineSafe,
   ROOT_DIR,

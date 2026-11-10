@@ -31,13 +31,13 @@
     <header class="article-head">
       <div class="article-meta">
         <span class="tag-cat">Legal</span>
-        <span>Effective 2026-05-08</span>
+        <span>Updated for version 2.2 beta</span>
       </div>
       <h1>Privacy Policy</h1>
       <p class="lede">
         Plain-language summary first, formal language second. SentivoGuard is built around a
         simple principle: scanning happens on your device, and the only data
-        that leaves it is what you explicitly send.
+        leaves it is described below, including account and license checks.
       </p>
     </header>
 
@@ -49,8 +49,8 @@
         <li>We don't collect: file contents from scans, browsing history, telemetry about how you use the app, or any device fingerprints.</li>
         <li>Disk scans run <b>entirely on your machine</b>. Findings stay on your machine unless you click "↗ VT" (sends only the file's SHA-256 hash to VirusTotal).</li>
         <li>Nova AI sends <b>only the conversation text you type</b> to Anthropic. Never file contents, never data from other tools.</li>
-        <li>Cookies are minimal: <code>sg_session</code> (your account) and <code>sg_license</code> (your license JWT). Both <code>HttpOnly</code> + <code>Secure</code>.</li>
-        <li>You can delete your account any time by clicking <b>Sign out</b> + clearing browser cookies. Per-device accounts mean nothing is stored on our servers.</li>
+        <li>Cookies are minimal: <code>sg_session</code> (a random session token). It is <code>HttpOnly</code> + <code>Secure</code>.</li>
+        <li>Signing out revokes your session. It does not delete your server-side account; contact us for an account data request.</li>
       </ul>
 
       <h2>What we collect</h2>
@@ -64,17 +64,13 @@
 
       <h3>When you sign up</h3>
       <p>
-        We collect your email address and a hashed (scrypt) password. Both are
-        stored only in a signed JWT cookie set on your browser — there is no
-        central user database in the current build. Logging in from a
-        different browser requires a fresh signup.
+        We collect your email address and a hashed (scrypt) password. These are stored in a private Redis account record, along with email-verification status and billing references. The browser receives only a random session token. Password hashes never appear in cookies. The same account works across browsers. Verification and password-reset links expire after 30 minutes and can be used once.
       </p>
 
       <h3>When you buy a paid plan</h3>
       <p>
         Payments are processed by <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a>.
-        We never see your card details — Stripe sends us a webhook saying "this
-        email paid for the Plus tier", and we mint a license JWT for that email.
+        We never see your card details — we use signed Stripe webhooks and the subscription status to update the account associated with its Stripe customer ID. We store customer and subscription IDs, plan, payment coverage and billing-review status.
         Stripe's privacy policy applies to their handling of your payment data.
       </p>
 
@@ -90,6 +86,7 @@
         <li>Activating Nova requires pasting your own Anthropic API key — we never see it.</li>
       </ul>
 
+      <p>Desktop activation and periodic renewal send the signed license, including email and subscription reference, to sentivoguard.com. Paid licenses expire within three days unless renewed. The Nova API key is stored using operating-system encryption in the desktop app. Nova sends your conversation history and a system prompt to Anthropic.</p>
       <h2>What we don't collect</h2>
       <ul>
         <li>File contents from disk scans</li>
@@ -118,17 +115,17 @@
           <tr style="border-bottom: 1px solid var(--bg-4);">
             <td style="padding: 10px 0;">Stripe</td>
             <td>Email + payment card details</td>
-            <td>Only at checkout</td>
+            <td>Checkout and subscription management</td>
           </tr>
           <tr style="border-bottom: 1px solid var(--bg-4);">
             <td style="padding: 10px 0;">Resend</td>
             <td>Email address + email content</td>
-            <td>Welcome / license / receipt emails</td>
+            <td>Requested verification and password-reset messages</td>
           </tr>
           <tr style="border-bottom: 1px solid var(--bg-4);">
             <td style="padding: 10px 0;">Anthropic</td>
             <td>Conversation text you type into Nova</td>
-            <td>Each Nova message (Plus only)</td>
+            <td>Each Nova message using your own provider key</td>
           </tr>
           <tr>
             <td style="padding: 10px 0;">VirusTotal</td>
@@ -138,26 +135,23 @@
         </tbody>
       </table>
 
+      <h2>Account storage</h2><p>Redis stores account records, hashed session and action tokens, rate-limit counters, and billing reconciliation records. Session tokens expire after 30 days; action tokens expire after 30 minutes. Billing event identifiers are retained for 90 days to prevent duplicate processing.</p>
       <h2>Cookies</h2>
-      <p>We set two cookies, both <code>HttpOnly</code> + <code>Secure</code> + <code>SameSite=Lax</code>:</p>
-      <ul>
-        <li><code>sg_session</code> — your authenticated session. Contains email, scrypt password hash, and (optionally) your license JWT. 30-day expiry.</li>
-        <li><code>sg_license</code> — alternative authentication via license key alone, without an account. 30-day expiry.</li>
-      </ul>
+      <p>The website uses <code>sg_session</code>, an opaque random token with <code>HttpOnly</code>, <code>Secure</code> and <code>SameSite=Lax</code>. It contains no email or password hash. The local desktop server uses a separate <code>sg_local</code> session cookie to protect its loopback API.</p>
       <p>No tracking cookies, no advertising cookies, no analytics cookies.</p>
 
       <h2>Retention</h2>
       <ul>
         <li><b>Session cookies</b> — kept until you sign out, manually clear cookies, or 30 days pass without renewal.</li>
-        <li><b>License JWTs</b> — valid until their <code>exp</code> claim (typically 1 year from issue).</li>
-        <li><b>Stripe records</b> — retained per Stripe's policy, typically 7 years for tax purposes.</li>
-        <li><b>Email logs</b> — retained by Resend for ~30 days for delivery debugging.</li>
+        <li><b>License JWTs</b> — valid until their <code>exp</code> claim (at most three days from issue).</li>
+        <li><b>Stripe records</b> — retained under Stripe's policies and applicable record-keeping requirements.</li>
+        <li><b>Email logs</b> — retained under Resend's configured service policy.</li>
       </ul>
 
       <h2>Your rights</h2>
       <ul>
-        <li><b>Delete your account</b> — sign out and clear your browser cookies. There's no central user record to delete in the current build.</li>
-        <li><b>Get a copy of your data</b> — your <code>sg_session</code> cookie IS your data. Decode it at <a href="https://jwt.io" target="_blank" rel="noopener">jwt.io</a> to inspect.</li>
+        <li><b>Delete your account</b> — contact us to request deletion of your central account record. Signing out only revokes the session.</li>
+        <li><b>Get a copy of your data</b> — contact us to request your account data. Never share session cookies or license keys.</li>
         <li><b>Cancel a paid plan</b> — Stripe customer portal handles this. Email us if you need help.</li>
         <li><b>Erase a Stripe record</b> — email us with your customer ID and we'll request deletion within Stripe's retention rules.</li>
       </ul>
@@ -203,7 +197,7 @@
           <span class="logo"><span class="logo-block"></span><span class="logo-block"></span></span>
           <span class="brand-name">SentivoGuard</span>
         </div>
-        <p class="muted">Complete privacy &amp; security suite. v2.1 · Windows.</p>
+        <p class="muted">Windows security companion · v2.2 beta.</p>
       </div>
       <div>
         <h4>Product</h4>

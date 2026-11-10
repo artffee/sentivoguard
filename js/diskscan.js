@@ -220,15 +220,7 @@ SG.router.register("diskscan", function (view) {
   // For now, treat `f.file` as absolute if it starts with a drive letter,
   // otherwise prepend the most-recent root.
   function resolveAbs(f) {
-    if (!f || !f.file) return null;
-    if (/^[a-z]:[\\/]/i.test(f.file)) return f.file.replace(/\//g, "\\");
-    // Disk scanner emits absolute paths (we built them by joining baseDir).
-    // Folder scanner uses relative — reconstruct with the requested target.
-    if (currentScanRoot) {
-      return (currentScanRoot + (currentScanRoot.endsWith("\\") ? "" : "\\") +
-              f.file.replace(/\//g, "\\"));
-    }
-    return f.file.replace(/\//g, "\\");
+    return f && typeof f.absolutePath === 'string' ? f.absolutePath : null;
   }
 
   let currentScanRoot = null;
@@ -382,6 +374,7 @@ SG.router.register("diskscan", function (view) {
           break;
         case "complete":
           stats = ev.stats;
+          SG.store.set('lastScan', { at: Date.now(), verdict: ev.verdict, files: stats.filesScanned, findings: stats.findingsCount, coverage: ev.coverage });
           document.getElementById("files-scanned").textContent =
             (ev.stats.filesScanned || 0).toLocaleString();
           document.getElementById("findings-count").textContent = String(findings.length);
@@ -396,7 +389,8 @@ SG.router.register("diskscan", function (view) {
             el("span", { class: "verdict " + cls }, "● " + v)
           );
           document.getElementById("progress-title").textContent =
-            ev.aborted ? "Cancelled" : "Scan complete · " + v;
+            ev.aborted ? "Cancelled" : "Scan complete · " + v + ' · Heuristic checks only' +
+              (ev.coverage ? ' · ' + ev.coverage.skipped + ' skipped · ' + ev.coverage.truncated + ' partially read' : '');
 
           // Activity feed
           const aType = v === "CLEAN" ? "ok" : v === "CAUTION" ? "warn" : "danger";

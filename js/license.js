@@ -8,7 +8,8 @@ SG.license = (function () {
   let cached = null;            // { token, email, plan, devices, expires, tier }
 
   function load() {
-    if (cached) return cached;
+    if (cached && cached.expires * 1000 > Date.now()) return cached;
+    cached = null;
     const stored = SG.store.get("license", null);
     if (stored && stored.token && stored.expires &&
         stored.expires * 1000 > Date.now()) {
@@ -50,7 +51,7 @@ SG.license = (function () {
     if (!r.ok) return { ok: false, error: r.error };
 
     const info = {
-      token,
+      token: r.token || token,
       email:   r.email,
       plan:    r.plan,
       devices: r.devices,
@@ -66,7 +67,8 @@ SG.license = (function () {
     return { ok: true, info };
   }
 
-  function deactivate() {
+  async function deactivate() {
+    await fetch("/api/license/deactivate", { method: "POST", headers: {"content-type":"application/json"}, body: "{}" });
     persist(null);
     applyToUser();
     SG.activity_log.log("info", "↓", "<b>License</b> · removed");
@@ -100,5 +102,27 @@ SG.license = (function () {
     }[ch]));
   }
 
-  return { load, applyToUser, activate, deactivate, has, info };
+  async function initialize() {
+    const stored = SG.store.get('license', null);
+    cached = null;
+    if (stored?.token && SG.backend.isReal()) {
+      const r = await SG.backend.verifyLicense(stored.token);
+      if (r.ok) persist({ ...r, token: r.token || stored.token });
+      else persist(null);
+    } else persist(null);
+    applyToUser();
+    document.querySelector('.user-name').textContent = SG.user.licensed ? SG.user.email : 'Local account';
+    document.querySelector('.user-plan').textContent = SG.user.plan;
+    document.querySelector('.brand-sub').textContent = SG.user.plan + ' · v' + (SG.backend.state.version || 'unknown');
+  }
+  setInterval(async () => {
+    const stored = SG.store.get('license', null);
+    if (!stored?.token || !SG.backend.isReal()) return;
+    try {
+      const r = await SG.backend.verifyLicense(stored.token);
+      persist(r.ok ? { ...r, token: r.token || stored.token } : null);
+      applyToUser();
+    } catch { /* Local expiry still applies. */ }
+  }, 30 * 60 * 1000);
+  return { initialize, load, applyToUser, activate, deactivate, has, info };
 })();

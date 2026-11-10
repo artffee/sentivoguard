@@ -1,149 +1,31 @@
-// Dashboard view
-
-SG.router.register("dashboard", function (view) {
+SG.router.register('dashboard', async view => {
   const el = SG.el;
-
-  const protectedTools = SG.tools.filter(t => t.status === "ok").length;
-  const warnings       = SG.tools.filter(t => t.status === "warn").length;
-
-  // Hero
-  const hero = el("section", { class: "dash-hero" },
-    el("div", { class: "hero-card" },
-      el("div", { class: "hero-eyebrow" }, "■■  Welcome back, Plus member"),
-      el("h2", { class: "hero-title" }, "You are protected."),
-      el("p", { class: "hero-desc" },
-        "Real-time scanning is on, your VPN is connected to Frankfurt, and Nova AI is standing by. " +
-        "All 14 tools are reporting healthy."),
-
-      el("div", { class: "hero-stats" },
-        statBlock("14", "Tools active"),
-        statBlock("0", "Threats"),
-        statBlock("12,847", "Trackers blocked today"),
-        statBlock("187 GB", "VPN data this month")
-      ),
-
-      el("div", { class: "hero-actions" },
-        el("button", {
-          class: "btn btn-primary",
-          onclick: () => SG.router.go("instinct")
-        }, "◈ Run Full Scan"),
-        el("button", {
-          class: "btn btn-ghost",
-          onclick: () => SG.nova.open()
-        }, "★ Ask Nova")
-      )
-    ),
-
-    el("div", { class: "quick-stats" },
-      qsCard("◐", "VPN Connection", "Frankfurt · 23 ms"),
-      qsCard("⊘", "Trackers Blocked", "12,847 today"),
-      qsCard("◇", "Reclaimable", "2.4 GB cache")
-    )
-  );
-
-  // Tools grid
-  const grid = el("div", { class: "tools-grid" },
-    ...SG.tools.map(t => toolCard(t))
-  );
-
-  // Activity (live)
-  const feed = el("div", { class: "feed", id: "dash-feed" });
-  renderFeed(feed);
-
-  // Re-render whenever activity changes (or every 30s for "x m ago")
-  function onActivity() {
-    if (document.body.contains(feed)) renderFeed(feed);
-  }
-  document.addEventListener("sg:activity", onActivity);
-  document.addEventListener("sg:activity-tick", onActivity);
-
-  view.append(
-    hero,
-    el("div", { class: "section-head" },
-      el("h3", {}, "Your Suite · 14 tools"),
-      el("span", { class: "section-action", onclick: () => alert("Tool catalog") }, "View pricing →")
-    ),
-    grid,
-    el("div", { class: "section-head" },
-      el("h3", {}, "Recent activity"),
-      el("span", {
-        class: "section-action",
-        onclick: () => {
-          if (!confirm("Clear activity feed?")) return;
-          SG.activity = [];
-          SG.persist("activity");
-          document.dispatchEvent(new CustomEvent("sg:activity"));
-        }
-      }, "Clear →")
-    ),
-    feed
-  );
-
-  function renderFeed(feed) {
-    SG.activity_log.refreshTimes();
-    feed.innerHTML = "";
-    const items = (SG.activity || []).slice(0, 10);
-    if (!items.length) {
-      feed.appendChild(
-        el("div", {
-          class: "muted",
-          style: "padding: 20px; text-align: center; font-size: 12px;"
-        }, "No activity yet. Run a scan or toggle a tool.")
-      );
-      return;
-    }
-    items.forEach(a =>
-      feed.appendChild(
-        el("div", { class: "feed-item" },
-          el("div", { class: "feed-icon " + a.type }, a.icon),
-          el("div", { class: "feed-meta", html: a.msg }),
-          el("div", { class: "feed-time" }, a.time)
-        )
-      )
-    );
-  }
-
-  function statBlock(num, label) {
-    return el("div", { class: "hero-stat" },
-      el("div", { class: "hero-stat-num" }, num),
-      el("div", { class: "hero-stat-label" }, label)
-    );
-  }
-  function qsCard(icon, label, value) {
-    return el("div", { class: "qs-card" },
-      el("div", { class: "qs-card-meta" },
-        el("div", { class: "qs-card-label" }, label),
-        el("div", { class: "qs-card-value" }, value)
-      ),
-      el("div", { class: "qs-card-icon" }, icon)
-    );
-  }
-
-  function toolCard(t) {
-    const tagClass =
-      t.tier === "Free"     ? "tag-ok" :
-      t.tier === "Standard" ? "" :
-      t.tier === "Plus"     ? "tag-plus" : "tag-ult";
-    const statusEl =
-      t.status === "ok"   ? el("span", { class: "tag tag-ok" }, "ACTIVE") :
-      t.status === "warn" ? el("span", { class: "tag tag-warn" }, "ATTN")  :
-                            el("span", { class: "tag" }, "OFF");
-
-    return el("div", {
-      class: "tool-card",
-      onclick: () => SG.router.go(t.id)
-    },
-      el("div", { class: "tool-card-head" },
-        el("div", { class: "tool-icon" }, t.icon),
-        el("span", { class: "tag " + tagClass }, t.tier)
-      ),
-      el("h4", { class: "tool-name" }, t.name),
-      el("div", { class: "tool-cat" }, t.cat),
-      el("p", { class: "tool-desc" }, t.desc),
-      el("div", { class: "tool-foot" },
-        el("span", { class: "muted tiny" }, t.statusText),
-        statusEl
-      )
-    );
-  }
-}, { title: "Dashboard", sub: "All systems operational · Plus plan" });
+  const scan = SG.store.get('lastScan', null);
+  const status = el('p', { class: 'muted' }, 'Checking local monitoring…');
+  const online = SG.backend.isReal();
+  view.append(el('section', { class: 'card' },
+    el('h2', {}, 'Your PC security overview'),
+    el('p', { class: 'muted' }, 'Review suspicious files and Windows security settings. A scan result is limited to the checks performed and does not guarantee that a device is safe.'),
+    status,
+    el('div', { class: 'hero-actions' },
+      el('button', { class: 'btn btn-primary', onclick: () => SG.router.go('diskscan') }, 'Scan my PC'),
+      el('button', { class: 'btn btn-ghost', onclick: () => SG.router.go('quarantine') }, 'Review quarantine'),
+      el('button', { class: 'btn btn-ghost', onclick: () => SG.router.go('settings') }, 'Settings & license')),
+    el('p', {}, scan ? 'Last scan: ' + new Date(scan.at).toLocaleString() + ' · ' + scan.verdict + ' · ' + scan.files + ' files · ' + scan.findings + ' findings' : 'No completed scan recorded on this device.')));
+  const actions = [
+    ['instinct', 'Inspect a package or repository', 'Pattern-based checks for scripts, packages, images and extensions.'],
+    ['defend', 'Windows Defender status', 'Read the current Windows antivirus configuration.'],
+    ['watch', 'Network connections', 'Inspect current per-process connections on Windows.'],
+    ['clean', 'Review cache storage', 'Measure cache sizes before choosing what to delete.'],
+    ['vault', 'Encrypted local vault', 'Master-password protected storage on this device.'],
+    ['nova', 'Ask Nova', 'Explain evidence you provide. Your own API key is required.']
+  ];
+  view.append(el('div', { class: 'tools-grid', style: 'margin-top:20px' }, ...actions.map(([route,title,description]) =>
+    el('button', { class: 'tool-card', onclick: () => SG.router.go(route) }, el('h3', {}, title), el('p', {}, description)))));
+  view.append(el('p', { class: 'muted' }, 'VPN, messaging, file transfer and hotspot sharing are in development. Windows status tools currently inspect settings; they do not change firewall or DNS rules.'));
+  if (!online) { status.textContent = 'Local service unavailable. Restart the desktop app to run scans.'; return; }
+  try {
+    const r = await fetch('/api/realtime/status').then(r => r.json());
+    status.textContent = r.ok ? (r.running ? 'File monitoring is running for ' + r.paths.length + ' selected folders.' : 'File monitoring is off.') : 'Monitoring status unavailable.';
+  } catch { status.textContent = 'Monitoring status unavailable.'; }
+}, { title: 'Dashboard', sub: 'Measured status · review findings before taking action' });
