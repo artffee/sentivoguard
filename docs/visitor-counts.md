@@ -11,3 +11,5 @@ Only canonical production hostnames load the collector after explicit opt-in. GP
 Validation: Node VM tests execute the production integration and the currently inspected Vercel collector against a synthetic fetch stub. No live analytics event is sent. Confirm one labeled QA visit and provider receipt after approved deployment, then keep QA separate from unclassified traffic.
 
 The review branch `review/visitor-counts-2026-11-14` is explicitly excluded from automatic Vercel deployments. This rule does not enable tracking or change the production branch.
+
+Measured HTML sets Referrer-Policy via a no-referrer meta tag, so the analytics request does not leak the current URL in its HTTP Referer header. The client separately skips unsafe incoming external referrers.
